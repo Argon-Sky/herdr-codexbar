@@ -296,8 +296,8 @@ def setup(dry_run=False, force=False):
         codexbar.write_json(UNDO, undo)  # The rows and width to restore on uninstall.
     write(changes, home)
     if brew():
-        result = run([brew(), "services", "start", MARKER])
-        print("poller: running (brew services)" if result and result.returncode == 0 else f"poller: could not start; run `brew services start {MARKER}`")
+        result = run([brew(), "services", "restart", MARKER])
+        print("poller: running (brew services)" if result and result.returncode == 0 else f"poller: could not start; run `brew services restart {MARKER}`")
     else:
         print(f"poller: not a Homebrew install; run `{shlex.quote(bin_path)} refresh` every few minutes yourself")
     result = run(["herdr", "server", "reload-config"])
