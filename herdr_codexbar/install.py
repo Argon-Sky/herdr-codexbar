@@ -317,7 +317,7 @@ def check():
     cli = codexbar.executable()
     try:
         providers = codexbar.run_json(["config", "providers", "--json"])
-        enabled = [entry["provider"] for entry in providers if entry.get("enabled")]
+        enabled = [entry["provider"] for entry in providers if entry.get("enabled") and entry["provider"] in codexbar.SUPPORTED]
         report(True, f"CodexBar CLI ({cli})")
     except (OSError, ValueError, TypeError, KeyError, subprocess.SubprocessError):
         enabled = []

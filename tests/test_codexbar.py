@@ -35,8 +35,9 @@ class NormalizeTests(unittest.TestCase):
         self.assertEqual([window["used"] for window in pools["gemini"]], [10.0, 20.0])
         self.assertFalse(pools["claude-gpt"][1]["known"])
 
-    def test_records_without_usage_are_skipped(self):
+    def test_unsupported_providers_and_errors_are_skipped(self):
         self.assertNotIn("broken", self.providers)
+        self.assertNotIn("unsupported-example", self.providers)
 
     def test_no_account_details_are_kept(self):
         text = json.dumps(snapshot())

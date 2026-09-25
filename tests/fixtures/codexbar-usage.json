@@ -62,5 +62,9 @@
       "loginMethod": "GOAT · $33.43 of $70.00"
     }
   },
+  {
+    "provider": "unsupported-example",
+    "usage": { "primary": { "usedPercent": 16, "resetsAt": "2026-01-19T00:00:00Z" }, "loginMethod": "Individual" }
+  },
   { "provider": "broken", "error": "not signed in" }
 ]

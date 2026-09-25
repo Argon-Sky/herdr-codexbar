@@ -18,6 +18,8 @@ APP_CLI = "/Applications/CodexBar.app/Contents/Helpers/CodexBarCLI"
 SNAPSHOT = STATE_DIR / "usage.json"
 STALE_SECONDS = 600
 SLOTS = ("primary", "secondary", "tertiary")
+# Providers with a supported agent; CodexBar may have others enabled.
+SUPPORTED = ("claude", "codex", "antigravity", "opencodego", "commandcode")
 # Antigravity bills Gemini and third-party (Claude, GPT) models from separate
 # pools; its standard windows only summarize them.
 AGY_POOLS = {
@@ -105,6 +107,8 @@ def normalize(raw, names=None, now=None):
         if not isinstance(record, dict) or not isinstance(record.get("provider"), str):
             continue
         provider = record["provider"]
+        if provider not in SUPPORTED:
+            continue
         usage = record.get("usage")
         if not isinstance(usage, dict):
             continue

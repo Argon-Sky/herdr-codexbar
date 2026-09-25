@@ -7,8 +7,8 @@ BAR_CELLS = 12
 EMPTY = ("", "", "")
 FILLED = ("", "", "")
 PACE_WIDTH = 17  # "□ 100% in deficit"
-# Short tab-bar names; other providers use their CodexBar display name.
-SHORT_NAMES = {"claude": "CC", "codex": "GPT", "antigravity": "Agy", "opencodego": "OC", "commandcode": "CMD", "copilot": "GH"}
+# Short tab-bar names, in tab-bar order.
+SHORT_NAMES = {"claude": "CC", "codex": "GPT", "antigravity": "Agy", "opencodego": "OC", "commandcode": "CMD"}
 POOL_PREFIXES = {"gemini": "", "claude-gpt": "3p "}
 
 
@@ -101,11 +101,10 @@ def tab_bar(snapshot):
     if not snapshot:
         return "[quota unavailable]"
     providers = snapshot["providers"]
-    order = [name for name in SHORT_NAMES if name in providers] + [name for name in providers if name not in SHORT_NAMES]
     parts = []
-    for name in order:
+    for name in (name for name in SHORT_NAMES if name in providers):
         pools = providers[name]["pools"]
         groups = [f"{POOL_PREFIXES.get(pool, '')}{'/'.join(str(percent_left(item)) if item['known'] else '-' for item in items)}"
                   for pool, items in pools.items()]
-        parts.append(f"{SHORT_NAMES.get(name, providers[name]['name'])} {' '.join(groups) or '?'}")
+        parts.append(f"{SHORT_NAMES[name]} {' '.join(groups) or '?'}")
     return " · ".join(parts) or "[quota unavailable]"

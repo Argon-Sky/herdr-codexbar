@@ -8,7 +8,7 @@ Subscription quota for your coding agents, right where you run them. herdr-codex
 - **Quota follows the subscription, not the agent.** Each pane shows the quota of the provider it is talking to right now. OpenCode switching from OpenCode Go to a Command Code model moves the pane to Command Code's quota.
 - **Antigravity's two pools.** Gemini models and third-party models (Claude, GPT) have separate quotas in Antigravity. The pane shows the pool of the model it is using.
 - **Pace, not just percent.** Every window says whether you are ahead of an even burn (■ in reserve), on pace (◪) or behind (□ in deficit), and when it resets.
-- **Every CodexBar provider in the tab bar**, including ones no agent is using right now, like GitHub Copilot.
+- **All five subscriptions at a glance** in the tab bar, including ones no agent is using right now.
 - **A setup you can review and undo.** `setup --dry-run` shows the exact diff, every edited file is backed up, and `uninstall` puts things back.
 
 ## Requirements
