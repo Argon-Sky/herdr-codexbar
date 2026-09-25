@@ -50,6 +50,19 @@ class TokenTests(unittest.TestCase):
         self.assertEqual(panes.quota_tokens("unsupported-example", None, snapshot()), dict.fromkeys(panes.QUOTA_TOKENS))
 
 
+class DisplayNameTests(unittest.TestCase):
+    def test_command_code_shows_the_bare_agent_id(self):
+        runner = Runner()
+        entry = {"pane": "w1:p2", "socket": "/tmp/herdr.sock", "herdr": "/bin/herdr", "harness": "commandcode", "provider": "commandcode", "pool": None}
+        panes.publish(entry, dict.fromkeys(panes.QUOTA_TOKENS), runner)
+        self.assertEqual(runner.calls[0][6:10], ["--agent", "cmd", "--display-agent", "cmd"])
+        self.assertTrue(all("--display-agent" not in call for call in runner.calls[1:]))
+        panes.publish({**entry, "harness": "claude"}, {"hc_plan": None}, runner)
+        self.assertNotIn("--display-agent", runner.calls[-1])
+        panes.publish(entry, {"hc_plan": None}, runner, remove=True)
+        self.assertEqual(runner.calls[-1][6:], ["--clear-display-agent", "--clear-token", "hc_plan"])
+
+
 class ErrorTests(unittest.TestCase):
     def test_reports_herdrs_message_not_the_command(self):
         error = subprocess.CalledProcessError(1, ["herdr", "--token", "hc_plan=Claude Pro"], output='{"error":{"code":"metadata_token_limit","message":"pane metadata may contain at most 32 tokens"}}')

@@ -18,6 +18,8 @@ from . import STATE_DIR, codexbar, render
 
 # Harness -> Herdr agent ID shown by `herdr pane list`.
 HARNESSES = {"claude": "claude", "codex": "codex", "antigravity": "agy", "opencode": "opencode", "commandcode": "cmd"}
+# Herdr names Command Code panes `cmd · <model>`; the model has its own row, so show the bare agent ID.
+PLAIN_NAMES = ("commandcode",)
 # Provider ID reported by a harness -> CodexBar provider. OpenCode custom providers
 # use the ID from the user's config, so name them after the CodexBar provider.
 PROVIDERS = {
@@ -107,11 +109,18 @@ def herdr_bin(env=os.environ):
     return env.get("HERDR_BIN_PATH") or shutil.which("herdr") or str(Path.home() / ".local/bin/herdr")
 
 
-def publish(entry, values, runner=subprocess.run):
+def publish(entry, values, runner=subprocess.run, remove=False):
+    """Set or clear tokens; `remove` also drops the display name we set."""
     # Clears first: a pane holds at most 32 tokens, and a batch of new ones could pass that before the old ones go.
     items = sorted(values.items(), key=lambda item: item[1] is not None)
     for start in range(0, len(items), MAX_UPDATES):
         args = [entry["herdr"], "pane", "report-metadata", entry["pane"], "--source", SOURCE]
+        if start == 0 and remove:
+            args.append("--clear-display-agent")
+        elif start == 0 and entry["harness"] in PLAIN_NAMES:
+            # The --agent guard drops the name, not the tokens, once another program runs in the pane.
+            name = HARNESSES[entry["harness"]]
+            args += ["--agent", name, "--display-agent", name]
         for key, value in items[start:start + MAX_UPDATES]:
             args += ["--token", f"{key}={value}"] if value else ["--clear-token", key]
         runner(args, check=True, capture_output=True, timeout=5, env=dict(os.environ, HERDR_SOCKET_PATH=entry["socket"]))
@@ -166,7 +175,7 @@ def refresh_panes(snapshot, runner=subprocess.run, now=None):
                 path.unlink(missing_ok=True)  # Pane closed; pane IDs are never reused.
             elif agents[entry["pane"]] != HARNESSES[entry["harness"]]:
                 path.unlink(missing_ok=True)  # Another program took over the pane: remove our rows.
-                publish(entry, dict.fromkeys(QUOTA_TOKENS + META_TOKENS), runner)
+                publish(entry, dict.fromkeys(QUOTA_TOKENS + META_TOKENS), runner, remove=True)
             else:
                 publish(entry, quota_tokens(entry["provider"], entry["pool"], snapshot, now), runner)
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
@@ -191,7 +200,7 @@ def clear_all(runner=subprocess.run):
     """Remove our tokens from every registered pane and forget them."""
     for path in PANES_DIR.glob("*.json"):
         try:
-            publish(json.loads(path.read_text()), dict.fromkeys(QUOTA_TOKENS + META_TOKENS), runner)
+            publish(json.loads(path.read_text()), dict.fromkeys(QUOTA_TOKENS + META_TOKENS), runner, remove=True)
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
             pass  # The pane or its server is gone.
         path.unlink(missing_ok=True)
