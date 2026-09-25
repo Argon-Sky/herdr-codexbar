@@ -1,0 +1,6 @@
+#!/bin/sh
+# Run herdr-codexbar from a checkout. The Homebrew formula installs an equivalent wrapper.
+root="$(cd "$(dirname "$0")/.." && pwd)"
+export HERDR_CODEXBAR_BIN="$root/bin/herdr-codexbar"
+export PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}"
+exec "${HERDR_CODEXBAR_PYTHON:-python3}" -m herdr_codexbar "$@"
