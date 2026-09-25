@@ -74,7 +74,7 @@ brew uninstall herdr-codexbar
 Run `herdr-codexbar check` first. It shows what is missing and how to fix it. The poller's own error is in `herdr-codexbar refresh`, and `brew services info herdr-codexbar` shows whether it runs.
 
 - **Bars show as boxes or question marks:** your terminal font is not Fira Code 6+ or a Nerd Font 3+.
-- **Rows are cut off:** the sidebar needs 65 columns. `setup` sets this when you have not, and `check` warns when your own width is narrower.
+- **Rows are cut off:** the sidebar needs 65 columns. `setup` sets it to 70 when you have not set it, and `check` warns when your own width is narrower.
 - **An agent shows no rows:** your `[ui.sidebar.agents.rows_by_agent]` has its own layout for that agent, which Herdr uses instead of ours. `check` tells you which.
 
 Still stuck? [Open an issue](https://github.com/Argon-Sky/herdr-codexbar/issues) with the output of `herdr-codexbar check`.

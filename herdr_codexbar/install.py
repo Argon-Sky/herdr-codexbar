@@ -26,20 +26,21 @@ PACKAGE = Path(__file__).parent.absolute()
 UNDO = STATE_DIR / "setup.json"
 BACKUPS = STATE_DIR / "backups"
 # Quota rows are 61 columns, plus 4 for the sidebar's indent and border; Herdr's
-# defaults (26, capped at 36) would cut them off. A blank row separates agents.
-SIDEBAR_WIDTH = 65
-DEFAULTS = {"ui": {"sidebar_width": SIDEBAR_WIDTH, "sidebar_max_width": 80}, "ui.sidebar.agents": {"row_gap": 1}}
+# defaults (26, capped at 36) would cut them off. Setup leaves a few columns spare.
+# A blank row separates agents.
+MIN_SIDEBAR_WIDTH = 65
+DEFAULTS = {"ui": {"sidebar_width": 70, "sidebar_max_width": 80}, "ui.sidebar.agents": {"row_gap": 1}}
 MIN_HERDR = (0, 9, 1)
 ROWS = """[
   [
     { token = "state_icon", dim = false },
-    { token = "workspace", dim = false },
-    { token = "tab", dim = false },
+    { token = "workspace", fg = "#FEFEFE", dim = false },
+    { token = "tab", fg = "#FEFEFE", dim = false },
   ],
   [
-    { token = "agent", dim = false },
+    { token = "agent", fg = "#FEFEFE", dim = false },
     { token = "$hc_plan", fg = "#FFD700", dim = false },
-    { token = "$hc_pool", dim = false },
+    { token = "$hc_pool", fg = "#FEFEFE", dim = false },
   ],
   [
     { token = "$hc_model", fg = "#B695F3", dim = false },
@@ -48,37 +49,37 @@ ROWS = """[
     { token = "$hc_context_2", fg = "#F3FA9A", dim = false },
     { token = "$hc_context_3", fg = "#F09995", dim = false },
     { token = "$hc_context_4", fg = "#EC625C", dim = false },
-    { token = "$hc_tokens", dim = false },
+    { token = "$hc_tokens", fg = "#FEFEFE", dim = false },
   ],
   [
-    { token = "$hc_q1_label", dim = false },
-    { token = "$hc_q1_bar", dim = false },
+    { token = "$hc_q1_label", fg = "#FEFEFE", dim = false },
+    { token = "$hc_q1_bar", fg = "#FEFEFE", dim = false },
     { token = "$hc_q1_bar_reserve", fg = "#85F789", dim = false },
     { token = "$hc_q1_bar_pace", fg = "#A1E7FA", dim = false },
     { token = "$hc_q1_bar_deficit", fg = "#EC625C", dim = false },
-    { token = "$hc_q1_left", dim = false },
-    { token = "$hc_q1_pace", dim = false, rules = [{ contains = "reserve", fg = "#85F789" }, { contains = "on pace", fg = "#A1E7FA" }, { contains = "deficit", fg = "#EC625C" }] },
-    { token = "$hc_q1_reset", dim = false },
+    { token = "$hc_q1_left", fg = "#FEFEFE", dim = false },
+    { token = "$hc_q1_pace", fg = "#FEFEFE", dim = false, rules = [{ contains = "reserve", fg = "#85F789" }, { contains = "on pace", fg = "#A1E7FA" }, { contains = "deficit", fg = "#EC625C" }] },
+    { token = "$hc_q1_reset", fg = "#FEFEFE", dim = false },
   ],
   [
-    { token = "$hc_q2_label", dim = false },
-    { token = "$hc_q2_bar", dim = false },
+    { token = "$hc_q2_label", fg = "#FEFEFE", dim = false },
+    { token = "$hc_q2_bar", fg = "#FEFEFE", dim = false },
     { token = "$hc_q2_bar_reserve", fg = "#85F789", dim = false },
     { token = "$hc_q2_bar_pace", fg = "#A1E7FA", dim = false },
     { token = "$hc_q2_bar_deficit", fg = "#EC625C", dim = false },
-    { token = "$hc_q2_left", dim = false },
-    { token = "$hc_q2_pace", dim = false, rules = [{ contains = "reserve", fg = "#85F789" }, { contains = "on pace", fg = "#A1E7FA" }, { contains = "deficit", fg = "#EC625C" }] },
-    { token = "$hc_q2_reset", dim = false },
+    { token = "$hc_q2_left", fg = "#FEFEFE", dim = false },
+    { token = "$hc_q2_pace", fg = "#FEFEFE", dim = false, rules = [{ contains = "reserve", fg = "#85F789" }, { contains = "on pace", fg = "#A1E7FA" }, { contains = "deficit", fg = "#EC625C" }] },
+    { token = "$hc_q2_reset", fg = "#FEFEFE", dim = false },
   ],
   [
-    { token = "$hc_q3_label", dim = false },
-    { token = "$hc_q3_bar", dim = false },
+    { token = "$hc_q3_label", fg = "#FEFEFE", dim = false },
+    { token = "$hc_q3_bar", fg = "#FEFEFE", dim = false },
     { token = "$hc_q3_bar_reserve", fg = "#85F789", dim = false },
     { token = "$hc_q3_bar_pace", fg = "#A1E7FA", dim = false },
     { token = "$hc_q3_bar_deficit", fg = "#EC625C", dim = false },
-    { token = "$hc_q3_left", dim = false },
-    { token = "$hc_q3_pace", dim = false, rules = [{ contains = "reserve", fg = "#85F789" }, { contains = "on pace", fg = "#A1E7FA" }, { contains = "deficit", fg = "#EC625C" }] },
-    { token = "$hc_q3_reset", dim = false },
+    { token = "$hc_q3_left", fg = "#FEFEFE", dim = false },
+    { token = "$hc_q3_pace", fg = "#FEFEFE", dim = false, rules = [{ contains = "reserve", fg = "#85F789" }, { contains = "on pace", fg = "#A1E7FA" }, { contains = "deficit", fg = "#EC625C" }] },
+    { token = "$hc_q3_reset", fg = "#FEFEFE", dim = false },
   ],
 ]"""
 CODEX_EVENTS = (("SessionStart", "startup|resume|clear|compact"), ("PostToolUse", None), ("Stop", None), ("PostCompact", None))
@@ -402,8 +403,8 @@ def check():
         config = tomllib.loads(herdr_config_path(home).read_text())
         overrides = sorted(set(config.get("ui", {}).get("sidebar", {}).get("agents", {}).get("rows_by_agent", {})) & set(panes.HARNESSES.values()))
         ui = config.get("ui", {})
-        wide = min(ui.get("sidebar_width", SIDEBAR_WIDTH), ui.get("sidebar_max_width", 80)) >= SIDEBAR_WIDTH
-        report(wide, "sidebar is wide enough for quota rows", f"set sidebar_width = {SIDEBAR_WIDTH} and sidebar_max_width = 80 or more under [ui] in ~/.config/herdr/config.toml", required=False)
+        wide = min(ui.get("sidebar_width", MIN_SIDEBAR_WIDTH), ui.get("sidebar_max_width", 80)) >= MIN_SIDEBAR_WIDTH
+        report(wide, "sidebar is wide enough for quota rows", "set sidebar_width = 70 and sidebar_max_width = 80 under [ui] in ~/.config/herdr/config.toml", required=False)
         report(not overrides, "no per-agent sidebar rows override ours", f"remove {', '.join(overrides)} from [ui.sidebar.agents.rows_by_agent] in ~/.config/herdr/config.toml", required=False)
     except (OSError, ValueError):
         pass
