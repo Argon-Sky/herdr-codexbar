@@ -1,0 +1,66 @@
+[
+  {
+    "provider": "claude",
+    "source": "oauth",
+    "usage": {
+      "updatedAt": "2026-01-10T12:00:00Z",
+      "primary": { "windowMinutes": 300, "resetsAt": "2026-01-10T15:31:00Z", "resetDescription": "3h 31m", "usedPercent": 5 },
+      "secondary": { "windowMinutes": 10080, "resetsAt": "2026-01-17T06:00:00Z", "resetDescription": "6d 18h", "usedPercent": 40 },
+      "tertiary": null,
+      "accountEmail": "someone@example.com",
+      "accountOrganization": "Example Org",
+      "loginMethod": "Claude Pro",
+      "identity": { "loginMethod": "Claude Pro", "providerID": "claude", "accountEmail": "someone@example.com" }
+    },
+    "pace": {
+      "primary": { "deltaPercent": -25, "stage": "ahead", "summary": "25% in reserve", "expectedUsedPercent": 30, "willLastToReset": true },
+      "secondary": { "deltaPercent": 0, "stage": "onPace", "summary": "On pace", "expectedUsedPercent": 40, "willLastToReset": true }
+    },
+    "rateWindowLabels": { "primary": "Session", "secondary": "Weekly" }
+  },
+  {
+    "provider": "codex",
+    "source": "oauth",
+    "usage": {
+      "primary": { "windowMinutes": 300, "resetsAt": "2026-01-10T16:00:00Z", "usedPercent": 0 },
+      "secondary": { "windowMinutes": 10080, "resetsAt": "2026-01-12T12:00:00Z", "usedPercent": 100 },
+      "tertiary": null,
+      "accountEmail": "someone@example.com",
+      "loginMethod": "plus"
+    },
+    "pace": { "secondary": { "deltaPercent": 30, "stage": "behind", "summary": "30% in deficit" } }
+  },
+  {
+    "provider": "antigravity",
+    "source": "local",
+    "usage": {
+      "primary": { "windowMinutes": 300, "resetsAt": "2026-01-10T16:00:00Z", "usedPercent": 10.0 },
+      "secondary": { "windowMinutes": 10080, "resetsAt": "2026-01-15T12:00:00Z", "usedPercent": 10.0 },
+      "extraRateWindows": [
+        { "id": "antigravity-quota-summary-gemini-5h", "title": "Gemini 5h", "window": { "usedPercent": 10, "resetsAt": "2026-01-10T16:00:00Z", "windowMinutes": 300 } },
+        { "id": "antigravity-quota-summary-gemini-weekly", "title": "Gemini weekly", "window": { "usedPercent": 20, "resetsAt": "2026-01-15T12:00:00Z", "windowMinutes": 10080 } },
+        { "id": "antigravity-quota-summary-3p-5h", "title": "Claude and GPT 5h", "window": { "usedPercent": 0, "windowMinutes": 300 } },
+        { "id": "antigravity-quota-summary-3p-weekly", "title": "Claude and GPT weekly", "usageKnown": false, "window": { "usedPercent": 0, "windowMinutes": 10080 } },
+        { "id": "antigravity-model-gemini-pro", "title": "Per model", "window": { "usedPercent": 1, "windowMinutes": 300 } }
+      ],
+      "accountEmail": "someone@example.com",
+      "loginMethod": "Google AI Pro"
+    }
+  },
+  {
+    "provider": "opencodego",
+    "usage": {
+      "primary": { "windowMinutes": 300, "usedPercent": 0 },
+      "secondary": { "windowMinutes": 10080, "resetsAt": "2026-01-12T00:00:00Z", "usedPercent": 82 },
+      "tertiary": { "windowMinutes": 43200, "resetsAt": "2026-02-02T00:00:00Z", "usedPercent": 56 }
+    }
+  },
+  {
+    "provider": "commandcode",
+    "usage": {
+      "primary": { "windowMinutes": 10080, "resetsAt": "2026-01-13T00:00:00Z", "usedPercent": 96 },
+      "loginMethod": "GOAT · $33.43 of $70.00"
+    }
+  },
+  { "provider": "broken", "error": "not signed in" }
+]
