@@ -2,6 +2,8 @@
 
 Subscription quota for your coding agents, right where you run them. herdr-codexbar puts [CodexBar](https://github.com/steipete/CodexBar)'s usage data into [Herdr](https://herdr.dev): a tab-bar summary of every subscription, and under each agent in the sidebar the plan it is billing, its model and context, and how much of each quota window is left.
 
+<p align="center"><img src="docs/sidebar.png" width="600" alt="Herdr sidebar with six agents: each shows its subscription plan, model, effort and context, and a colored bar per quota window with the percent left, whether usage is in reserve, on pace or in deficit, and the time to reset. The tab bar sums up all five subscriptions."></p>
+
 ## Why this one
 
 - **It never touches your credentials.** CodexBar already signs in to your providers and reads their quota. herdr-codexbar only asks the CodexBar CLI for the numbers, so there are no tokens, cookies or API keys to hand over.
