@@ -1,4 +1,5 @@
 import json
+import subprocess
 import unittest
 
 from herdr_codexbar import codexbar, panes, render
@@ -47,6 +48,13 @@ class TokenTests(unittest.TestCase):
         self.assertEqual(panes.quota_tokens("claude", None, None)["hc_q1_label"], "quota unavailable")
         self.assertEqual(panes.quota_tokens(None, None, snapshot()), dict.fromkeys(panes.QUOTA_TOKENS))
         self.assertEqual(panes.quota_tokens("unsupported-example", None, snapshot()), dict.fromkeys(panes.QUOTA_TOKENS))
+
+
+class ErrorTests(unittest.TestCase):
+    def test_reports_herdrs_message_not_the_command(self):
+        error = subprocess.CalledProcessError(1, ["herdr", "--token", "hc_plan=Claude Pro"], output='{"error":{"code":"metadata_token_limit","message":"pane metadata may contain at most 32 tokens"}}')
+        self.assertEqual(panes.herdr_error(error), "pane metadata may contain at most 32 tokens")
+        self.assertEqual(panes.herdr_error(subprocess.CalledProcessError(2, ["herdr"], output=b"")), "herdr exited with status 2")
 
 
 class ReportTests(unittest.TestCase):

@@ -171,8 +171,20 @@ def refresh_panes(snapshot, runner=subprocess.run, now=None):
                 publish(entry, quota_tokens(entry["provider"], entry["pool"], snapshot, now), runner)
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
             failed += 1  # An unreachable server is retried on the next refresh.
-            print(f"herdr-codexbar: {path.name}: {error}", file=sys.stderr)
+            print(f"herdr-codexbar: {path.name}: {herdr_error(error)}", file=sys.stderr)
     return failed
+
+
+def herdr_error(error):
+    """Herdr's own message for a failed call, not the command line, which holds the token values."""
+    if not isinstance(error, subprocess.CalledProcessError):
+        return str(error)
+    output = error.stdout or error.stderr or b""
+    output = output.decode(errors="replace") if isinstance(output, bytes) else output
+    try:
+        return json.loads(output)["error"]["message"]
+    except (ValueError, KeyError, TypeError):
+        return output.strip() or f"herdr exited with status {error.returncode}"
 
 
 def clear_all(runner=subprocess.run):
