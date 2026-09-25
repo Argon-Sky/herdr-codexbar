@@ -108,7 +108,8 @@ def herdr_bin(env=os.environ):
 
 
 def publish(entry, values, runner=subprocess.run):
-    items = list(values.items())
+    # Clears first: a pane holds at most 32 tokens, and a batch of new ones could pass that before the old ones go.
+    items = sorted(values.items(), key=lambda item: item[1] is not None)
     for start in range(0, len(items), MAX_UPDATES):
         args = [entry["herdr"], "pane", "report-metadata", entry["pane"], "--source", SOURCE]
         for key, value in items[start:start + MAX_UPDATES]:
