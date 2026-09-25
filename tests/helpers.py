@@ -31,12 +31,14 @@ class Runner:
             stdout = json.dumps({"result": {"panes": [{"pane_id": pane, "agent": agent} for pane, agent in self.agents.items()]}})
         return Result()
 
-    def tokens(self, call=-1):
-        args, values = self.calls[call], {}
-        for index, arg in enumerate(args):
-            if arg == "--token":
-                key, _, value = args[index + 1].partition("=")
-                values[key] = value
-            elif arg == "--clear-token":
-                values[args[index + 1]] = None
+    def tokens(self):
+        """Every token update across the recorded report-metadata calls."""
+        values = {}
+        for args in self.calls:
+            for index, arg in enumerate(args):
+                if arg == "--token":
+                    key, _, value = args[index + 1].partition("=")
+                    values[key] = value
+                elif arg == "--clear-token":
+                    values[args[index + 1]] = None
         return values

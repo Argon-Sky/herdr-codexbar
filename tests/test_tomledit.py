@@ -5,7 +5,7 @@ from herdr_codexbar import tomledit
 
 ROWS = '[["agent"], ["$hc_q1"]]'
 COMMAND = "/opt/homebrew/bin/herdr-codexbar bar"
-DEFAULTS = {"sidebar_width": 62, "sidebar_max_width": 80}
+DEFAULTS = {"ui": {"sidebar_width": 65, "sidebar_max_width": 80}, "ui.sidebar.agents": {"row_gap": 1}}
 CONFIG = """# my config
 onboarding = false
 
@@ -35,7 +35,8 @@ class SetupTests(unittest.TestCase):
         self.assertEqual(config["sidebar_width"], 48)
         self.assertEqual(config["sidebar"]["agents"]["rows_by_agent"], {"pi": [["agent"]]})
         self.assertIn("# keep this comment", text)
-        self.assertEqual(undo, {"rows": '[\n  ["state_icon", "agent"],  # mine\n]', "added": ["sidebar_max_width"]})
+        self.assertEqual(config["sidebar"]["agents"]["row_gap"], 1)
+        self.assertEqual(undo, {"rows": '[\n  ["state_icon", "agent"],  # mine\n]', "added": ["sidebar_max_width", "row_gap"]})
 
     def test_is_idempotent_and_replaces_an_old_command(self):
         text, _ = tomledit.setup(CONFIG, COMMAND, ROWS, DEFAULTS)
@@ -51,8 +52,8 @@ class SetupTests(unittest.TestCase):
     def test_empty_config(self):
         text, undo = tomledit.setup("", COMMAND, ROWS, DEFAULTS)
         config = tomllib.loads(text)["ui"]
-        self.assertEqual((config["sidebar_width"], config["sidebar_max_width"]), (62, 80))
-        self.assertEqual(undo["added"], ["sidebar_width", "sidebar_max_width"])
+        self.assertEqual((config["sidebar_width"], config["sidebar_max_width"], config["sidebar"]["agents"]["row_gap"]), (65, 80, 1))
+        self.assertEqual(undo["added"], ["sidebar_width", "sidebar_max_width", "row_gap"])
         restored = tomllib.loads(tomledit.uninstall(text, undo))
         self.assertEqual(restored, {"ui": {"tab_bar_right": [], "sidebar": {"agents": {}}}})
 

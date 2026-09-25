@@ -1,7 +1,7 @@
 """Small textual edits to Herdr's config.toml that keep the rest of the file intact.
 
 Only our item in `ui.tab_bar_right`, the `ui.sidebar.agents.rows` value and,
-when unset, a few `[ui]` defaults (the sidebar width) are touched. Everything
+when unset, a few defaults (the sidebar width, the gap between agents) are touched. Everything
 else (comments, order, other tab-bar items) stays byte for byte. Configs that
 set these through dotted keys or inline tables are refused rather than guessed.
 """
@@ -150,7 +150,10 @@ def table_body(text, table):
 
 
 def setup(text, command, rows, defaults):
-    """New config text with our tab-bar item, rows and any unset `[ui]` defaults, plus what uninstall needs to undo it."""
+    """New config text with our tab-bar item, rows and any unset defaults, plus what uninstall needs to undo it.
+
+    `defaults` maps a table name (`ui`, `ui.sidebar.agents`) to its keys and values.
+    """
     config = tomllib.loads(text)
     ui = config.get("ui", {})
     previous_rows = None
@@ -172,7 +175,7 @@ def setup(text, command, rows, defaults):
     else:
         text = append(text, f"[ui.sidebar.agents]\nrows = {rows}\n")
 
-    # --- ui.tab_bar_right and ui.sidebar_width, both directly under [ui]
+    # --- ui.tab_bar_right, directly under [ui]
     item = f"{{ type = \"command\", command = {toml_string(command)}, interval_seconds = 30, timeout_seconds = 2 }}"
     location = find_key(text, "ui", "tab_bar_right")
     if location:
@@ -184,10 +187,23 @@ def setup(text, command, rows, defaults):
         raise Unsupported("`ui.tab_bar_right` is set with a dotted key or inline table; move it under [ui] or edit it by hand")
     else:
         text = add_to_ui(text, f"tab_bar_right = [\n  {item},\n]", ui)
-    for key, value in reversed(defaults.items()):  # Each is inserted right under [ui].
-        if key not in tomllib.loads(text).get("ui", {}):
-            text = add_to_ui(text, f"{key} = {value}  # {MARKER}", ui)
-            added.insert(0, key)
+    # --- defaults, each inserted right under its table header
+    for table, values in defaults.items():
+        inserted = []
+        for key, value in reversed(values.items()):
+            current = tomllib.loads(text)
+            for part in table.split("."):
+                current = current.get(part, {})
+            if key in current:
+                continue
+            line = f"{key} = {value}  # {MARKER}"
+            if table == "ui":
+                text = add_to_ui(text, line, ui)
+            else:  # The rows above made sure the table has a header.
+                body, _ = table_body(text, table)
+                text = text[:body] + f"\n{line}" + text[body:]
+            inserted.insert(0, key)
+        added += inserted
 
     tomllib.loads(text)  # Never write a config Herdr cannot parse.
     return text, {"rows": previous_rows, "added": added}

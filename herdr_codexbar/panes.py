@@ -32,8 +32,15 @@ PROVIDERS = {
     "command-code": "commandcode",
 }
 POOL_NAMES = {"gemini": "Gemini", "claude-gpt": "Claude & GPT"}
-QUOTA_TOKENS = ("hc_plan", "hc_pool", "hc_q1", "hc_q2", "hc_q3")
-META_TOKENS = ("hc_model", "hc_effort", "hc_context", "hc_tokens")
+PACE_STATES = ("reserve", "pace", "deficit")
+# Per quota row: the bar is published under the token of its pace state, so the
+# sidebar can color it; the pace text is colored by a rule on its own words.
+ROW_PARTS = ("label", "bar", *(f"bar_{state}" for state in PACE_STATES), "left", "pace", "reset")
+QUOTA_TOKENS = ("hc_plan", "hc_pool", *(f"hc_q{row}_{part}" for row in (1, 2, 3) for part in ROW_PARTS))
+# Context percent is published under the token of its band: <25, 25-50, 50-75, >75.
+CONTEXT_BANDS = (25, 50, 75)
+META_TOKENS = ("hc_model", "hc_effort", *(f"hc_context_{band}" for band in range(1, len(CONTEXT_BANDS) + 2)), "hc_tokens")
+MAX_UPDATES = 16  # Herdr's limit per report-metadata call.
 SOURCE = "user:herdr-codexbar"
 PANE_ID = re.compile(r"w[A-Za-z0-9_-]+:p[A-Za-z0-9_-]+")
 PANES_DIR = STATE_DIR / "panes"
@@ -56,13 +63,20 @@ def route(report):
     return provider, ("gemini" if "gemini" in model else "claude-gpt") if model else None
 
 
+def context_band(percent):
+    """1 below 25%, 2 up to 50%, 3 up to 75%, 4 above."""
+    low, mid, high = CONTEXT_BANDS
+    return 1 + (percent >= low) + (percent > mid) + (percent > high)
+
+
 def meta_tokens(report):
-    values = {"hc_model": report.get("model") or None, "hc_effort": report.get("effort") or None, "hc_context": None, "hc_tokens": None}
+    values = dict.fromkeys(META_TOKENS)
+    values.update({"hc_model": report.get("model") or None, "hc_effort": report.get("effort") or None})
     used, limit, percent = report.get("context_used"), report.get("context_limit"), report.get("context_percent")
     if percent is None and used and limit:
         percent = used / limit * 100
     if percent is not None:
-        values["hc_context"] = f"context {round(percent)}%"
+        values[f"hc_context_{context_band(round(percent))}"] = f"context {round(percent)}%"
     if used:
         values["hc_tokens"] = f"{compact_tokens(used)} / {compact_tokens(limit)}" if limit else compact_tokens(used)
     return values
@@ -73,15 +87,19 @@ def quota_tokens(provider, pool, snapshot, now=None):
     if provider is None:
         return values
     if snapshot is None:
-        values["hc_q1"] = "quota unavailable"
+        values["hc_q1_label"] = "quota unavailable"
         return values
     data = snapshot["providers"].get(provider)
     if data is None:
         return values  # Not enabled in CodexBar.
     values["hc_plan"] = data["plan"]
     values["hc_pool"] = POOL_NAMES.get(pool)
-    for index, window in enumerate(data["pools"].get(pool or "", [])[:3], 1):
-        values[f"hc_q{index}"] = render.quota_row(window, now)
+    for row, window in enumerate(data["pools"].get(pool or "", [])[:3], 1):
+        parts = render.quota_parts(window, now)
+        bar = f"bar_{parts['state']}" if parts["state"] else "bar"
+        for part in ("label", "left", "pace", "reset"):
+            values[f"hc_q{row}_{part}"] = parts[part]
+        values[f"hc_q{row}_{bar}"] = parts["bar"]
     return values
 
 
@@ -90,10 +108,12 @@ def herdr_bin(env=os.environ):
 
 
 def publish(entry, values, runner=subprocess.run):
-    args = [entry["herdr"], "pane", "report-metadata", entry["pane"], "--source", SOURCE]
-    for key, value in values.items():  # At most 16 updates per call; there are 9.
-        args += ["--token", f"{key}={value}"] if value else ["--clear-token", key]
-    runner(args, check=True, capture_output=True, timeout=5, env=dict(os.environ, HERDR_SOCKET_PATH=entry["socket"]))
+    items = list(values.items())
+    for start in range(0, len(items), MAX_UPDATES):
+        args = [entry["herdr"], "pane", "report-metadata", entry["pane"], "--source", SOURCE]
+        for key, value in items[start:start + MAX_UPDATES]:
+            args += ["--token", f"{key}={value}"] if value else ["--clear-token", key]
+        runner(args, check=True, capture_output=True, timeout=5, env=dict(os.environ, HERDR_SOCKET_PATH=entry["socket"]))
 
 
 def registration_path(pane):

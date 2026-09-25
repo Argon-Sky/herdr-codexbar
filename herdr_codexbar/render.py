@@ -6,7 +6,9 @@ BAR_CELLS = 12
 # Fira Code 6+ progress-bar glyphs: left cap, middle and right cap, empty then filled.
 EMPTY = ("", "", "")
 FILLED = ("", "", "")
-PACE_WIDTH = 17  # "□ 100% in deficit"
+PACE_WIDTH = 16  # "□ 99% in deficit"
+# Herdr trims whitespace around token values; the blank Braille pattern survives and pads columns.
+BLANK = "\u2800"
 # Short tab-bar names, in tab-bar order.
 SHORT_NAMES = {"claude": "CC", "codex": "GPT", "antigravity": "Agy", "opencodego": "OC", "commandcode": "CMD"}
 POOL_PREFIXES = {"gemini": "", "claude-gpt": "3p "}
@@ -70,30 +72,43 @@ def pace_delta(window, now=None):
     return window["used"] - elapsed / duration * 100
 
 
-def pace_text(delta):
+def pace_state(delta):
+    """`reserve`, `pace` or `deficit`; None without a pace."""
     if delta is None:
+        return None
+    amount = round(abs(delta))
+    return "pace" if amount == 0 else "reserve" if delta < 0 else "deficit"
+
+
+def pace_text(delta):
+    state = pace_state(delta)
+    if state is None:
         return ""
     amount = round(abs(delta))
-    if amount == 0:
-        return "◪ on pace"
-    return f"■ {amount}% in reserve" if delta < 0 else f"□ {amount}% in deficit"
+    return {"pace": "◪ on pace", "reserve": f"■ {amount}% in reserve", "deficit": f"□ {amount}% in deficit"}[state]
 
 
-def quota_row(window, now=None):
-    """`5h  <bar>  95% left  ■ 25% in reserve  ↻  3h 31m`, every column at a fixed width.
+def quota_parts(window, now=None):
+    """The columns of one quota row, each padded to a fixed width: label, bar, left, pace, reset.
 
-    Labels are left-aligned: Herdr trims leading spaces from token values.
+    Herdr colors each token as a whole and separates tokens with ` · `, so every
+    column is its own token. `state` says which color the bar and pace take.
     """
-    label = window["label"] or ""
+    label = (window["label"] or "").rjust(3, BLANK)
     if not window["known"]:
-        return f"{label:<3} unknown"
+        return {"label": label, "bar": None, "state": None, "left": "unknown", "pace": None, "reset": None}
     left = percent_left(window)
-    if started(window):
-        reset = time_left(window["resetsAt"], now) or ""
-    else:
-        reset = label  # An unused rolling window has not started its countdown yet.
-    row = f"{label:<3} {progress_bar(left)} {f'{left}% left':>9}  {pace_text(pace_delta(window, now)):<{PACE_WIDTH}}"
-    return f"{row}  ↻ {reset:>7}" if reset else row.rstrip()
+    delta = pace_delta(window, now)
+    # An unused rolling window has not started its countdown yet; show its length instead.
+    reset = (time_left(window["resetsAt"], now) or "") if started(window) else window["label"] or ""
+    return {
+        "label": label,
+        "bar": progress_bar(left),
+        "state": pace_state(delta),
+        "left": f"{left}% left".rjust(9, BLANK),
+        "pace": pace_text(delta).ljust(PACE_WIDTH, BLANK),
+        "reset": f"↻ {reset:>7}" if reset else None,
+    }
 
 
 def tab_bar(snapshot):

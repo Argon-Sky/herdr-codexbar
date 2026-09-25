@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from herdr_codexbar import codexbar, panes
+from herdr_codexbar import codexbar, panes, render
 
 from .helpers import NOW, Runner, snapshot
 
@@ -27,19 +27,26 @@ class RouteTests(unittest.TestCase):
 
 class TokenTests(unittest.TestCase):
     def test_meta_tokens(self):
-        self.assertEqual(panes.meta_tokens(report()), {"hc_model": "Opus 5.5", "hc_effort": "high", "hc_context": "context 12%", "hc_tokens": "120k / 1M"})
+        values = panes.meta_tokens(report())
+        self.assertEqual({key: value for key, value in values.items() if value}, {"hc_model": "Opus 5.5", "hc_effort": "high", "hc_context_1": "context 12%", "hc_tokens": "120k / 1M"})
+        self.assertEqual(set(values), set(panes.META_TOKENS))
+
+    def test_context_bands(self):
+        self.assertEqual([panes.context_band(percent) for percent in (0, 24, 25, 50, 51, 75, 76, 100)], [1, 1, 2, 2, 3, 3, 4, 4])
         self.assertEqual(panes.meta_tokens(report(context_percent=None, context_limit=None, effort=None))["hc_tokens"], "120k")
 
     def test_quota_tokens(self):
         values = panes.quota_tokens("antigravity", "gemini", snapshot(), NOW)
         self.assertEqual((values["hc_plan"], values["hc_pool"]), ("Google AI Pro", "Gemini"))
-        self.assertTrue(values["hc_q1"].startswith("5h  "))
-        self.assertIsNone(values["hc_q3"])
+        self.assertEqual(values["hc_q1_label"], f"{render.BLANK}5h")
+        self.assertEqual([key for key in values if key.startswith("hc_q1_bar") and values[key]], ["hc_q1_bar_reserve"])
+        self.assertIsNone(values["hc_q3_label"])
+        self.assertEqual(set(values), set(panes.QUOTA_TOKENS))
 
     def test_stale_snapshot_and_unknown_provider(self):
-        self.assertEqual(panes.quota_tokens("claude", None, None)["hc_q1"], "quota unavailable")
+        self.assertEqual(panes.quota_tokens("claude", None, None)["hc_q1_label"], "quota unavailable")
         self.assertEqual(panes.quota_tokens(None, None, snapshot()), dict.fromkeys(panes.QUOTA_TOKENS))
-        self.assertEqual(panes.quota_tokens("copilot", None, snapshot()), dict.fromkeys(panes.QUOTA_TOKENS))
+        self.assertEqual(panes.quota_tokens("unsupported-example", None, snapshot()), dict.fromkeys(panes.QUOTA_TOKENS))
 
 
 class ReportTests(unittest.TestCase):
@@ -55,7 +62,8 @@ class ReportTests(unittest.TestCase):
         tokens = runner.tokens()
         self.assertEqual(tokens["hc_plan"], "Claude Pro")
         self.assertEqual(tokens["hc_model"], "Opus 5.5")
-        self.assertIsNone(tokens["hc_q3"])
+        self.assertIsNone(tokens["hc_q3_label"])
+        self.assertTrue(all(call.count("--token") + call.count("--clear-token") <= panes.MAX_UPDATES for call in runner.calls))
         entry = json.loads(panes.registration_path("w1:p2").read_text())
         self.assertEqual((entry["provider"], entry["pool"]), ("claude", None))
 
