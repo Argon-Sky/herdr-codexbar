@@ -50,7 +50,7 @@ And these agents:
 | [Oh My Pi](https://github.com/can1357/oh-my-pi) | `omp` | extension | follows the selected model's provider |
 | [Prime Agent](https://github.com/PrimeIntellect-ai/prime-agent) | `prime-agent` | extension | follows the selected model's provider |
 
-Portable subscriptions (ChatGPT, xAI, OpenCode Go, Command Code, Copilot) work in any of these agents that can use them. The [coverage matrix](docs/coverage.md) shows every tested combination, plus the harnesses and subscriptions that are planned or not possible.
+Portable subscriptions (ChatGPT, xAI, OpenCode Go, Command Code, Copilot) work in any of these agents that can use them. The [coverage matrix](docs/coverage.md) shows which combinations are tested and what each harness can use.
 
 ## Install
 
@@ -114,7 +114,7 @@ Still stuck? [Open an issue](https://github.com/Argon-Sky/herdr-codexbar/issues)
 Ideas, not promises. Upvote or comment on the [roadmap issues](https://github.com/Argon-Sky/herdr-codexbar/issues?q=is%3Aissue+label%3Aroadmap) to move them up.
 
 - Linux, once CodexBar's CLI runs there.
-- More agents, next up Cline CLI, Mastra Code and Droid. The [coverage matrix](docs/coverage.md) lists every harness and subscription with its status.
+- More agents, next up Cline CLI, Mastra Code and Droid.
 - Session tokens and API-equivalent cost.
 - Quota for API and credit billing.
 - A compact layout for narrow sidebars, if people ask for it.
