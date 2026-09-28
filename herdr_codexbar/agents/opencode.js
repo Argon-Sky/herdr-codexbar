@@ -6,7 +6,7 @@
 // footer. `herdr-codexbar setup` installs a two-line entrypoint that calls
 // create() with the path of the herdr-codexbar command.
 
-import { execFile } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 
 const POLL_INTERVAL_MS = 1_000;
 
@@ -76,7 +76,11 @@ export function create(command) {
     sync();
     const poll = setInterval(sync, POLL_INTERVAL_MS);
     poll.unref?.();
-    return () => clearInterval(poll);
+    return () => {
+      clearInterval(poll);
+      // On exit, remove this pane's rows so the next program in it does not show them; detached, as the TUI may exit before the command finishes.
+      if (last !== undefined) spawn(command, ["clear", "opencode"], { detached: true, stdio: "ignore" }).unref();
+    };
   }
 
   return { id: "herdr-codexbar", setup };

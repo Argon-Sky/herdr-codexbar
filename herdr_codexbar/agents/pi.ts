@@ -81,4 +81,14 @@ export default function (pi: ExtensionAPI): void {
   pi.on("thinking_level_select", (_event, ctx) => void sync(ctx));
   pi.on("turn_start", (_event, ctx) => void sync(ctx));
   pi.on("turn_end", (_event, ctx) => void sync(ctx));
+  // On quit, remove this pane's rows so the next program in it does not show them. Pi replaces a session with a reason other than "quit" and reports the new one; Oh My Pi gives no reason.
+  pi.on("session_shutdown", async (event) => {
+    if ((event?.reason && event.reason !== "quit") || last === undefined) return;
+    last = undefined;
+    await run(COMMAND, ["clear", HARNESS]);
+    if (reportedSession) {
+      await run(herdr, ["pane", "release-agent", pane, "--source", SOURCE, "--agent", AGENT]);
+      reportedSession = undefined;
+    }
+  });
 }

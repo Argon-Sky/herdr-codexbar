@@ -44,6 +44,15 @@ def report():
     return 0
 
 
+def clear(harness):
+    """Exit entrypoint for the plugins: remove this pane's rows; always silent."""
+    try:
+        panes.clear(harness)
+    except Exception:  # noqa: BLE001 - never delay the agent's exit.
+        pass
+    return 0
+
+
 def refresh():
     """Poll CodexBar and update every registered pane; run by the Homebrew service."""
     status = 0
@@ -71,6 +80,8 @@ def main(argv=None):
     hook_parser = commands.add_parser("hook", help="agent status-line or hook entrypoint (reads JSON on stdin)")
     hook_parser.add_argument("harness", choices=sorted(harnesses.PARSERS))
     commands.add_parser("report", help="plugin entrypoint (reads a report as JSON on stdin)")
+    clear_parser = commands.add_parser("clear", help="plugin exit entrypoint (removes the pane's rows)")
+    clear_parser.add_argument("harness", choices=sorted(panes.HARNESSES))
     args = parser.parse_args(argv)
 
     if args.command == "check":
@@ -83,6 +94,8 @@ def main(argv=None):
         status = 0
     elif args.command == "refresh":
         status = refresh()
+    elif args.command == "clear":
+        status = clear(args.harness)
     elif args.command == "hook":
         status = hook(args.harness)
     else:

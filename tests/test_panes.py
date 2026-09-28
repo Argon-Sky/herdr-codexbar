@@ -109,6 +109,18 @@ class ReportTests(unittest.TestCase):
         self.assertNotIn("--token", published["w1:p2"])
         self.assertEqual([path.name for path in panes.PANES_DIR.glob("*.json")], ["w1_p1.json"])
 
+    def test_clear_on_exit_only_for_the_registered_harness(self):
+        panes.report(report(harness="omp", provider_id="xai-oauth"), ENV, Runner(), NOW)
+        runner = Runner()
+        panes.clear("codex", ENV, runner)  # Another harness reported in this pane since.
+        self.assertEqual(runner.calls, [])
+        panes.clear("omp", ENV, runner)
+        calls = len(runner.calls)
+        self.assertIn("--clear-display-agent", runner.calls[0])
+        self.assertTrue(all("--token" not in call for call in runner.calls))
+        self.assertFalse(panes.registration_path("w1:p2").exists())
+        panes.clear("omp", ENV, runner)  # Nothing left to clear.
+        self.assertEqual(len(runner.calls), calls)
 
 if __name__ == "__main__":
     unittest.main()
