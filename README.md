@@ -22,7 +22,7 @@ Subscription quota for your coding agents, right where you run them. herdr-codex
 
 ## Coverage
 
-| Harness ╲ Subscription | Claude Pro | ChatGPT Plus | X Premium+ | Google AI Pro | OpenCode Go | Command Code GOAT | Copilot Pro |
+| Harness ╲ Subscription | Claude Pro | ChatGPT Plus | SuperGrok | Google AI Pro | OpenCode Go | Command Code GOAT | Copilot Pro |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [Claude Code](https://claude.com/claude-code) | ✅ | ❌ | ❌ | ❌ | ❔ | ❔ | ❌ |
 | [Codex](https://github.com/openai/codex) | ❌ | ✅ | ❔ | ❌ | ❔ | ❔ | ❌ |
@@ -45,7 +45,7 @@ Notes:
 
 - Codex needs `hooks = true` under `[features]` in `~/.codex/config.toml`, and must be started with `--no-daemon`. Its quota appears after the first message.
 - Claude Code and Codex reach only some OpenCode Go models: MiniMax and Qwen in Claude Code, GPT Luna, Grok and Muse Spark in Codex. Translating proxies such as LiteLLM are not supported.
-- SuperGrok works like X Premium+, and higher tiers (Claude Max, ChatGPT Pro and similar) like the plans above.
+- X Premium+ works like SuperGrok, and higher tiers (Claude Max, ChatGPT Pro and similar) like the plans above.
 
 ## Install
 
