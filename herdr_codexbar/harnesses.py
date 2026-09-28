@@ -36,6 +36,36 @@ def claude(payload):
     }
 
 
+def grok(payload):
+    """Grok Build `ui.status_line` JSON; the payload follows Claude Code's names."""
+    context = payload.get("context_window") or {}
+    model = payload.get("model") or {}
+    return {
+        "harness": "grok",
+        "provider_id": "grok",
+        "model": model.get("display_name") or model.get("id"),
+        "effort": (payload.get("effort") or {}).get("level"),
+        "context_used": number(context.get("context_tokens")),
+        "context_limit": number(context.get("context_window_size")),
+        "context_percent": number(context.get("used_percentage")),
+    }
+
+
+def copilot(payload):
+    """GitHub Copilot CLI `statusLine` JSON; it has no reasoning effort."""
+    context = payload.get("context_window") or {}
+    model = payload.get("model") or {}
+    return {
+        "harness": "copilot",
+        "provider_id": "github-copilot",
+        "model": model.get("display_name") or model.get("id"),
+        "effort": None,
+        "context_used": number(context.get("current_context_tokens")),
+        "context_limit": number(context.get("displayed_context_limit")),
+        "context_percent": number(context.get("current_context_used_percentage")),
+    }
+
+
 def nominal_window(size):
     """Antigravity reports a nominal 1M window as ~1 MiB; count within 10k of N MiB as N million."""
     mebibytes = round(size / 1_048_576)
@@ -121,4 +151,4 @@ def codex(payload, home=None):
     }
 
 
-PARSERS = {"claude": claude, "antigravity": antigravity, "codex": codex}
+PARSERS = {"claude": claude, "antigravity": antigravity, "codex": codex, "grok": grok, "copilot": copilot}

@@ -14,10 +14,12 @@ BIN = "/opt/homebrew/bin/herdr-codexbar"
 class InstallTests(unittest.TestCase):
     def setUp(self):
         self.home = Path(tempfile.mkdtemp())
-        for directory in (".claude", ".codex", ".gemini/antigravity-cli", ".config/opencode", ".commandcode"):
+        for directory in (".claude", ".codex", ".gemini/antigravity-cli", ".config/opencode", ".commandcode", ".copilot", ".grok"):
             (self.home / directory).mkdir(parents=True)
         (self.home / ".codex/hooks.json").write_text(json.dumps({"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "notify"}]}]}}))
         (self.home / ".config/opencode/cli.json").write_text(json.dumps({"plugins": ["./herdr-opencode"]}))
+        (self.home / ".copilot/settings.json").write_text(json.dumps({"theme": "github"}))
+        (self.home / ".grok/config.toml").write_text('[ui]\ntheme = "dark"\n\n[[marketplace.sources]]\nname = "x"\n')
         patches = [
             mock.patch.dict(os.environ, {"HOME": str(self.home), "HERDR_CODEXBAR_BIN": BIN}),
             mock.patch.object(install, "run", return_value=None),  # Never touch the real Herdr or brew.
@@ -34,6 +36,10 @@ class InstallTests(unittest.TestCase):
         install.setup()
         self.assertEqual(self.read(".claude/settings.json")["statusLine"]["command"], f"{BIN} hook claude")
         self.assertEqual(self.read(".gemini/antigravity-cli/settings.json")["statusLine"]["command"], f"{BIN} hook antigravity")
+        self.assertEqual(self.read(".copilot/settings.json"), {"theme": "github", "statusLine": {"type": "command", "command": f"{BIN} hook copilot", "padding": 0}})
+        grok = tomllib.loads((self.home / ".grok/config.toml").read_text())
+        self.assertEqual(grok["ui"], {"theme": "dark", "status_line": {"type": "command", "command": f"{BIN} hook grok"}})
+        self.assertEqual(grok["marketplace"]["sources"], [{"name": "x"}])
         hooks = self.read(".codex/hooks.json")["hooks"]
         self.assertEqual(sorted(hooks), ["PostCompact", "PostToolUse", "SessionStart", "Stop"])
         self.assertEqual(hooks["Stop"][0]["hooks"][0]["command"], "notify")
@@ -77,6 +83,8 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(after.pop(self.home / ".claude/settings.json"), "{}\n")
         self.assertEqual(after.pop(self.home / ".gemini/antigravity-cli/settings.json"), "{}\n")
         self.assertEqual(after.pop(config).strip().removesuffix("[ui]").strip(), before.pop(config).strip())
+        grok = self.home / ".grok/config.toml"
+        self.assertEqual(after.pop(grok), before.pop(grok))
         self.assertEqual({path: json.loads(text) for path, text in after.items()}, {path: json.loads(text) for path, text in before.items()})
 
 

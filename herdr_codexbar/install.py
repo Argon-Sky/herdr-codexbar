@@ -90,6 +90,8 @@ HARNESSES = {
     "antigravity": (".gemini/antigravity-cli", "antigravity", "antigravity-cli"),
     "opencode": (".config/opencode", "opencodego", "opencode"),
     "commandcode": (".commandcode", "commandcode", None),
+    "copilot": (".copilot", "copilot", "copilot"),
+    "grok": (".grok", "grok", "grok"),
 }
 
 
@@ -149,6 +151,20 @@ def status_line(path, line, force, remove=False):
             raise Conflict(f"{path} already has a statusLine ({current['command']}); rerun with --force to replace it")
         settings["statusLine"] = {"type": "command", "command": line, "padding": current.get("padding", 0)}
     return json_change(path, mutate)
+
+
+def grok_status_line(path, line, force, remove=False):
+    """Grok Build's status line lives in `[ui.status_line]` of its TOML config."""
+    old = path.read_text() if path.is_file() else ""
+    current = tomllib.loads(old).get("ui", {}).get("status_line", {})
+    ours = MARKER in str(current.get("command", ""))
+    if remove:
+        new = tomledit.remove_table(old, "ui.status_line") if ours else old
+    else:
+        if current.get("command") and not ours and not force:
+            raise Conflict(f"{path} already has a status line ({current['command']}); rerun with --force to replace it")
+        new = tomledit.set_table(old, "ui.status_line", {"type": '"command"', "command": tomledit.toml_string(line)})
+    return [(path, old or None, new or None)] if new != old else []
 
 
 def codex_hooks(path, line, remove=False):
@@ -221,6 +237,10 @@ def plan(home, bin_path, force=False, remove=False):
         changes += status_line(home / ".gemini/antigravity-cli/settings.json", f"{line} hook antigravity", force, remove)
     if "codex" in harnesses:
         changes += codex_hooks(home / ".codex/hooks.json", f"{line} hook codex", remove)
+    if "copilot" in harnesses:
+        changes += status_line(home / ".copilot/settings.json", f"{line} hook copilot", force, remove)
+    if "grok" in harnesses:
+        changes += grok_status_line(home / ".grok/config.toml", f"{line} hook grok", force, remove)
     if "opencode" in harnesses:
         changes += opencode(home, bin_path, remove)
     if "commandcode" in harnesses:
@@ -375,7 +395,7 @@ def check():
         print(f"      {provider:<12} {detail}")
 
     harnesses = installed(home)
-    report(bool(harnesses), f"agents found: {', '.join(harnesses) or 'none'}", "install Claude Code, Codex, OpenCode, Antigravity CLI or Command Code")
+    report(bool(harnesses), f"agents found: {', '.join(harnesses) or 'none'}", "install Claude Code, Codex, OpenCode, Antigravity CLI, Command Code, Copilot CLI or Grok Build")
     result = run([herdr, "integration", "status"]) if herdr else None
     status = result.stdout if result else ""
     for name in harnesses:

@@ -25,6 +25,31 @@ USAGE = {"type": "event_msg", "payload": {"type": "token_count", "info": {"last_
 EMPTY_USAGE = {"type": "event_msg", "payload": {"type": "token_count", "info": None}}
 
 
+class GrokAndCopilotTests(unittest.TestCase):
+    def test_grok_status_line_payload(self):
+        report = harnesses.grok({
+            "model": {"id": "grok-4.5", "display_name": "Grok 4.5"},
+            "effort": {"level": "low"},
+            "context_window": {"context_window_size": 500_000, "context_tokens": 19_410, "session_input_tokens": 90_000, "used_percentage": 4},
+        })
+        self.assertEqual(report, {"harness": "grok", "provider_id": "grok", "model": "Grok 4.5", "effort": "low",
+                                  "context_used": 19_410, "context_limit": 500_000, "context_percent": 4})
+
+    def test_copilot_status_line_payload(self):
+        report = harnesses.copilot({
+            "model": {"id": "auto", "display_name": "Auto → gpt-5.6-luna"},
+            "context_window": {"context_window_size": None, "used_percentage": None, "total_tokens": 15_722,
+                               "current_context_tokens": 17_417, "displayed_context_limit": 200_000, "current_context_used_percentage": 9},
+        })
+        self.assertEqual(report, {"harness": "copilot", "provider_id": "github-copilot", "model": "Auto → gpt-5.6-luna", "effort": None,
+                                  "context_used": 17_417, "context_limit": 200_000, "context_percent": 9})
+
+    def test_missing_fields(self):
+        for parser in (harnesses.grok, harnesses.copilot):
+            report = parser({})
+            self.assertEqual((report["model"], report["context_used"], report["context_percent"]), (None, None, None))
+
+
 class ClaudeTests(unittest.TestCase):
     def test_status_line_payload(self):
         report = harnesses.claude({

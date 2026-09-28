@@ -27,6 +27,8 @@ Subscription quota for your coding agents, right where you run them. herdr-codex
 | [OpenCode](https://opencode.ai) | TUI plugin | follows the selected model's provider |
 | [Antigravity CLI](https://antigravity.google) | status-line command | Google AI plan, Gemini or Claude & GPT pool |
 | [Command Code](https://commandcode.ai) | mod | Command Code plan |
+| [GitHub Copilot CLI](https://github.com/features/copilot/cli) | status-line command | Copilot plan, monthly premium requests |
+| [Grok Build](https://x.ai/cli) | status-line command (`[ui.status_line]` in `~/.grok/config.toml`) | Grok plan |
 
 ## Install
 

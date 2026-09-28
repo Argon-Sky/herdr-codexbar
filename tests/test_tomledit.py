@@ -59,5 +59,21 @@ class SetupTests(unittest.TestCase):
                 tomledit.setup(config, ROWS, DEFAULTS)
 
 
+
+class TableTests(unittest.TestCase):
+    def test_set_keeps_other_keys_and_remove_restores(self):
+        config = '[ui]\ntheme = "dark"\n\n[ui.status_line]\ntype = "builtin"\npadding = 2\n\n[[plugins]]\nname = "x"\n'
+        text = tomledit.set_table(config, "ui.status_line", {"type": '"command"', "command": '"hc hook grok"'})
+        self.assertEqual(tomllib.loads(text)["ui"]["status_line"], {"type": "command", "command": "hc hook grok", "padding": 2})
+        self.assertEqual(tomllib.loads(text)["plugins"], [{"name": "x"}])
+        self.assertEqual(tomledit.remove_table(text, "ui.status_line"), '[ui]\ntheme = "dark"\n\n[[plugins]]\nname = "x"\n')
+
+    def test_set_appends_a_missing_table(self):
+        text = tomledit.set_table('[ui]\ntheme = "dark"\n', "ui.status_line", {"type": '"command"'})
+        self.assertEqual(text, '[ui]\ntheme = "dark"\n\n[ui.status_line]\ntype = "command"\n')
+        self.assertEqual(tomledit.remove_table(text, "ui.status_line"), '[ui]\ntheme = "dark"\n')
+        with self.assertRaises(tomledit.Unsupported):
+            tomledit.set_table('ui.status_line = { type = "builtin" }\n', "ui.status_line", {"type": '"command"'})
+
 if __name__ == "__main__":
     unittest.main()

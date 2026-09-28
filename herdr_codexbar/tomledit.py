@@ -203,3 +203,44 @@ def toml_string(value):
 def rows_are_ours(text):
     rows = tomllib.loads(text).get("ui", {}).get("sidebar", {}).get("agents", {}).get("rows", "")
     return "$hc_q1" in str(rows)
+
+
+def table_span(text, table):
+    """(header start, end) of `[table]`, ending at the next table or array-of-tables header, or None."""
+    for name, start, body, _ in tables(text):
+        if normalize_name(name) == table:
+            following = re.compile(r"^[ \t]*\[", re.M).search(text, body)
+            return start, following.start() if following else len(text)
+    return None
+
+
+def set_table(text, table, values):
+    """Set `key = value` lines in `[table]`, adding the table at the end when missing; other keys stay."""
+    if table_span(text, table) is None:
+        *parents, name = table.split(".")
+        current = tomllib.loads(text)
+        for part in parents:
+            current = current.get(part, {})
+        if name in current:
+            raise Unsupported(f"`{table}` is set with a dotted key or inline table; edit it by hand")
+        return append(text, f"[{table}]\n" + "".join(f"{key} = {value}\n" for key, value in values.items()))
+    for key, value in reversed(values.items()):
+        location = find_key(text, table, key)
+        if location:
+            _, start, end = location
+            text = text[:start] + value + text[end:]
+        else:
+            body = next(body for name, _, body, _ in tables(text) if normalize_name(name) == table)
+            text = text[:body] + f"\n{key} = {value}" + text[body:]
+    tomllib.loads(text)
+    return text
+
+
+def remove_table(text, table):
+    span = table_span(text, table)
+    if span is None:
+        return text
+    before, after = text[:span[0]].rstrip("\n"), text[span[1]:]
+    if not before:
+        return after
+    return f"{before}\n\n{after}" if after.strip() else f"{before}\n"
