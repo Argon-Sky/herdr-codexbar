@@ -1,4 +1,4 @@
-# Compatibility
+# Coverage
 
 Which coding agents (harnesses) herdr-codexbar works with, which subscriptions they can bill, and what is planned. herdr-codexbar shows a subscription's quota only when all three line up: the harness can use the subscription, [CodexBar](https://github.com/steipete/CodexBar) tracks it, and herdr-codexbar knows how to read the harness's current model and provider.
 
@@ -30,7 +30,7 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 | Claude Pro | $20 | tied: Claude Code | ✅ 5h, weekly | done |
 | ChatGPT Plus | $20 | portable: sign-in with ChatGPT | ✅ 5h, weekly | done |
 | Google AI Pro | $20 | tied: Antigravity CLI | ✅ per model pool | done |
-| SuperGrok (or X Premium+) | $30 | portable: sign-in with xAI | ✅ weekly | done |
+| X Premium+ (or SuperGrok) | $30 for SuperGrok | portable: sign-in with xAI | ✅ weekly | done |
 | OpenCode Go | $10 | portable: API key | ✅ 5h, weekly, monthly | done |
 | Command Code GOAT | $10 | portable: API key | ✅ 5h, weekly, monthly | done |
 | GitHub Copilot Pro | $10 | portable: sign-in with GitHub | ✅ monthly premium requests | done |
@@ -121,7 +121,7 @@ Notes:
 - OpenCode Go serves each model family on one API only. Claude Code reaches the ones on its Anthropic endpoint (MiniMax and Qwen); Codex reaches the ones on its Responses endpoint (GPT Luna, Grok and Muse Spark). The rest (GLM, Kimi, DeepSeek and others) need a harness that speaks Chat Completions.
 - Translating proxies such as Codex Router or LiteLLM, which put other APIs behind Claude Code or Codex, are not supported: the harness then reports the proxy, not the plan.
 - OpenCode Go expects clients to send a session header and lists the ones it has validated (Claude Code, Codex, Pi, jcode, Kilo CLI). Other harnesses may be throttled, and it flags Kimi Code as problematic.
-- SuperGrok works outside Grok Build through the xAI sign-in that Pi and Kilo CLI offer. An xAI API key uses the same provider ID, so it would show the subscription's quota too.
+- X Premium+ and SuperGrok work outside Grok Build through the xAI sign-in that OpenCode, Kilo CLI and the Pi family offer. An xAI API key uses the same provider ID, so it would show the subscription's quota too.
 - Plans restrict use to coding tools; scripts and automations are not allowed on most of them.
 
 ## Tied subscriptions × harnesses

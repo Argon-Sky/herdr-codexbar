@@ -18,23 +18,39 @@ Subscription quota for your coding agents, right where you run them. herdr-codex
 - [Herdr](https://herdr.dev) 0.9.1 or newer: `brew install herdr`. Install Herdr's integration for each agent you use, for example `herdr integration install claude`.
 - [CodexBar](https://github.com/steipete/CodexBar): `brew install --cask codexbar`. Open it once, sign in to your providers and turn on the ones you want in its settings. The CodexBar CLI (Preferences → Advanced → Install CLI) is optional: herdr-codexbar falls back to the CLI inside the app.
 - [Fira Code](https://github.com/tonsky/FiraCode) 6 or newer as your terminal font, for the progress bars: `brew install --cask font-fira-code`. Any [Nerd Font](https://www.nerdfonts.com) 3 or newer works too.
-- One or more supported agents:
+- One or more of the agents under [Coverage](#coverage).
 
-| Agent | How it reports | Quota it shows |
-| --- | --- | --- |
-| [Claude Code](https://claude.com/claude-code) | status-line command | Claude |
-| [Codex](https://github.com/openai/codex) | hooks (turn on `hooks = true` under `[features]` in `~/.codex/config.toml`, and start Codex with `--no-daemon`) | ChatGPT plan |
-| [OpenCode](https://opencode.ai) | TUI plugin | follows the selected model's provider |
-| [Antigravity CLI](https://antigravity.google) | status-line command | Google AI plan, Gemini or Claude & GPT pool |
-| [Command Code](https://commandcode.ai) | mod | Command Code plan |
-| [GitHub Copilot CLI](https://github.com/features/copilot/cli) | status-line command | Copilot plan, monthly premium requests |
-| [Grok Build](https://x.ai/cli) | status-line command (`[ui.status_line]` in `~/.grok/config.toml`) | Grok plan |
-| [Pi](https://github.com/earendil-works/pi) | extension | follows the selected model's provider |
-| [Kilo CLI](https://github.com/Kilo-Org/kilocode) | TUI plugin | follows the model of the newest message |
-| [Oh My Pi](https://github.com/can1357/oh-my-pi) | extension | follows the selected model's provider |
-| [Prime Agent](https://github.com/PrimeIntellect-ai/prime-agent) | extension | follows the selected model's provider |
+## Coverage
 
-The [compatibility matrix](docs/compatibility.md) covers every harness and subscription we know of: what works, what each harness can bill, and what is planned.
+Tested with these subscriptions:
+
+| Provider | Subscription |
+| --- | --- |
+| Anthropic | Claude Pro |
+| OpenAI | ChatGPT Plus |
+| xAI | X Premium+ (or SuperGrok) |
+| Google | Google AI Pro |
+| OpenCode | OpenCode Go |
+| Command Code | Command Code GOAT |
+| GitHub | Copilot Pro |
+
+And these agents:
+
+| Agent | Command | How it reports | Quota it shows |
+| --- | --- | --- | --- |
+| [Claude Code](https://claude.com/claude-code) | `claude` | status-line command | Claude |
+| [Codex](https://github.com/openai/codex) | `codex` | hooks (turn on `hooks = true` under `[features]` in `~/.codex/config.toml`, and start Codex with `--no-daemon`) | ChatGPT plan |
+| [OpenCode](https://opencode.ai) | `opencode` | TUI plugin | follows the selected model's provider |
+| [Antigravity CLI](https://antigravity.google) | `agy` | status-line command | Google AI plan, Gemini or Claude & GPT pool |
+| [Command Code](https://commandcode.ai) | `cmd` | mod | Command Code plan |
+| [GitHub Copilot CLI](https://github.com/features/copilot/cli) | `copilot` | status-line command | Copilot plan, monthly premium requests |
+| [Grok Build](https://x.ai/cli) | `grok` | status-line command (`[ui.status_line]` in `~/.grok/config.toml`) | Grok plan |
+| [Pi](https://github.com/earendil-works/pi) | `pi` | extension | follows the selected model's provider |
+| [Kilo CLI](https://github.com/Kilo-Org/kilocode) | `kilo` | TUI plugin | follows the model of the newest message |
+| [Oh My Pi](https://github.com/can1357/oh-my-pi) | `omp` | extension | follows the selected model's provider |
+| [Prime Agent](https://github.com/PrimeIntellect-ai/prime-agent) | `prime-agent` | extension | follows the selected model's provider |
+
+Portable subscriptions (ChatGPT, xAI, OpenCode Go, Command Code, Copilot) work in any of these agents that can use them. The [coverage matrix](docs/coverage.md) shows every tested combination, plus the harnesses and subscriptions that are planned or not possible.
 
 ## Install
 
@@ -98,7 +114,7 @@ Still stuck? [Open an issue](https://github.com/Argon-Sky/herdr-codexbar/issues)
 Ideas, not promises. Upvote or comment on the [roadmap issues](https://github.com/Argon-Sky/herdr-codexbar/issues?q=is%3Aissue+label%3Aroadmap) to move them up.
 
 - Linux, once CodexBar's CLI runs there.
-- More agents, next up Cline CLI, Mastra Code and Droid. The [compatibility matrix](docs/compatibility.md) lists every harness and subscription with its status.
+- More agents, next up Cline CLI, Mastra Code and Droid. The [coverage matrix](docs/coverage.md) lists every harness and subscription with its status.
 - Session tokens and API-equivalent cost.
 - Quota for API and credit billing.
 - A compact layout for narrow sidebars, if people ask for it.
