@@ -10,7 +10,7 @@ PACE_WIDTH = 16  # "□ 99% in deficit"
 # Herdr trims whitespace around token values; the blank Braille pattern survives and pads columns.
 BLANK = "\u2800"
 # Short tab-bar names, in tab-bar order.
-SHORT_NAMES = {"claude": "CC", "codex": "GPT", "antigravity": "Agy", "opencodego": "OC", "commandcode": "CMD"}
+SHORT_NAMES = {"claude": "CC", "codex": "GPT", "antigravity": "Agy", "opencodego": "OC", "commandcode": "CMD", "copilot": "GHC", "grok": "Grok"}
 POOL_PREFIXES = {"gemini": "", "claude-gpt": "3p "}
 
 

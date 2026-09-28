@@ -63,6 +63,26 @@
     }
   },
   {
+    "provider": "copilot",
+    "rateWindowLabels": { "primary": "Premium" },
+    "pace": { "primary": { "stage": "farBehind", "deltaPercent": -9, "summary": "9% in reserve" } },
+    "usage": {
+      "primary": { "usedPercent": 16, "resetsAt": "2026-02-01T00:00:00Z" },
+      "accountEmail": "someone@example.com",
+      "loginMethod": "Individual"
+    }
+  },
+  {
+    "provider": "grok",
+    "rateWindowLabels": { "primary": "Weekly" },
+    "usage": {
+      "primary": { "windowMinutes": 10080, "resetsAt": "2026-01-14T00:00:00Z", "usedPercent": 30 },
+      "accountEmail": "someone@example.com",
+      "accountOrganization": "Example Org",
+      "loginMethod": "X Premium+"
+    }
+  },
+  {
     "provider": "unsupported-example",
     "usage": { "primary": { "usedPercent": 16, "resetsAt": "2026-01-19T00:00:00Z" }, "loginMethod": "Individual" }
   },

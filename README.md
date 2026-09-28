@@ -10,7 +10,7 @@ Subscription quota for your coding agents, right where you run them. herdr-codex
 - **Quota follows the subscription, not the agent.** Each pane shows the quota of the provider it is talking to right now. OpenCode switching from OpenCode Go to a Command Code model moves the pane to Command Code's quota.
 - **Antigravity's two pools.** Gemini models and third-party models (Claude, GPT) have separate quotas in Antigravity. The pane shows the pool of the model it is using.
 - **Pace, not just percent.** Every window says whether you are ahead of an even burn (■ in reserve), on pace (◪) or behind (□ in deficit), and when it resets.
-- **All five subscriptions at a glance** in the tab bar, including ones no agent is using right now.
+- **Every supported subscription at a glance** in the tab bar, including ones no agent is using right now.
 - **A setup you can review and undo.** `setup --dry-run` shows the exact diff, every edited file is backed up, and `uninstall` puts things back.
 
 ## Requirements
@@ -53,6 +53,8 @@ Each agent reports the provider ID it is using. herdr-codexbar maps that ID to a
 | `antigravity` | Antigravity, pool by model |
 | `opencode-go` | OpenCode Go |
 | `commandcode` | Command Code |
+| `github-copilot` | Copilot, monthly premium requests |
+| `grok` | Grok |
 
 Other providers, such as OpenCode Zen, have no quota in CodexBar, so the pane shows its model and context only. In OpenCode, a custom provider shows a subscription's quota when you name it after the CodexBar provider, for example `commandcode` for a Command Code plan used through its OpenAI-compatible API.
 

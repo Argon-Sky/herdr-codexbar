@@ -3,5 +3,7 @@
   { "provider": "codex", "displayName": "Codex", "enabled": true },
   { "provider": "antigravity", "displayName": "Antigravity", "enabled": true },
   { "provider": "opencodego", "displayName": "OpenCode Go", "enabled": true },
-  { "provider": "commandcode", "displayName": "Command Code", "enabled": true }
+  { "provider": "commandcode", "displayName": "Command Code", "enabled": true },
+  { "provider": "copilot", "displayName": "Copilot", "enabled": true },
+  { "provider": "grok", "displayName": "Grok", "enabled": true }
 ]

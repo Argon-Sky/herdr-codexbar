@@ -19,6 +19,7 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(panes.route(report(harness="opencode", provider_id="opencode-go")), ("opencodego", None))
         self.assertEqual(panes.route(report(harness="opencode", provider_id="commandcode")), ("commandcode", None))
         self.assertEqual(panes.route(report(harness="codex", provider_id="openai")), ("codex", None))
+        self.assertEqual(panes.route(report(harness="opencode", provider_id="github-copilot")), ("copilot", None))
         self.assertEqual(panes.route(report(harness="opencode", provider_id="opencode")), (None, None))
 
     def test_antigravity_pool_follows_the_model(self):

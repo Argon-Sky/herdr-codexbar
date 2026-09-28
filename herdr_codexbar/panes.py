@@ -32,6 +32,9 @@ PROVIDERS = {
     "opencodego": "opencodego",
     "commandcode": "commandcode",
     "command-code": "commandcode",
+    "github-copilot": "copilot",
+    "copilot": "copilot",
+    "grok": "grok",
 }
 POOL_NAMES = {"gemini": "Gemini", "claude-gpt": "Claude & GPT"}
 PACE_STATES = ("reserve", "pace", "deficit")

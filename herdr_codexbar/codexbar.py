@@ -19,7 +19,9 @@ SNAPSHOT = STATE_DIR / "usage.json"
 STALE_SECONDS = 600
 SLOTS = ("primary", "secondary", "tertiary")
 # Providers with a supported agent; CodexBar may have others enabled.
-SUPPORTED = ("claude", "codex", "antigravity", "opencodego", "commandcode")
+SUPPORTED = ("claude", "codex", "antigravity", "opencodego", "commandcode", "copilot", "grok")
+# Window length for providers whose CodexBar windows have none: Copilot premium requests reset monthly.
+DEFAULT_MINUTES = {"copilot": 30 * 1440}
 # Antigravity bills Gemini and third-party (Claude, GPT) models from separate
 # pools; its standard windows only summarize them.
 AGY_POOLS = {
@@ -70,11 +72,11 @@ def pace_delta(pace):
     return number(pace.get("deltaPercent"))
 
 
-def window(data, pace=None, known=True):
+def window(data, pace=None, known=True, default_minutes=None):
     if not isinstance(data, dict):
         return None
     used = number(data.get("usedPercent"), 0, 100)
-    minutes = number(data.get("windowMinutes"), 1)
+    minutes = number(data.get("windowMinutes"), 1) or default_minutes
     reset = data.get("resetsAt")
     return {
         "label": window_label(minutes),
@@ -122,7 +124,7 @@ def normalize(raw, names=None, now=None):
         else:
             pace = record.get("pace") if isinstance(record.get("pace"), dict) else {}
             for slot in SLOTS:
-                item = window(usage.get(slot), pace.get(slot))
+                item = window(usage.get(slot), pace.get(slot), default_minutes=DEFAULT_MINUTES.get(provider))
                 if item:
                     pools.setdefault("", []).append(item)
         for items in pools.values():

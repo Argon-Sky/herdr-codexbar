@@ -18,12 +18,20 @@ class NormalizeTests(unittest.TestCase):
             "antigravity": "Google AI Pro",
             "opencodego": "OpenCode Go",
             "commandcode": "Command Code GOAT",
+            "copilot": "Copilot Individual",
+            "grok": "X Premium+",
         })
 
     def test_windows_are_labelled_and_sorted(self):
         pool = self.providers["opencodego"]["pools"][""]
         self.assertEqual([window["label"] for window in pool], ["5h", "7d", "30d"])
         self.assertIsNone(pool[0]["resetsAt"])
+
+    def test_copilot_month_has_a_default_length(self):
+        (month,) = self.providers["copilot"]["pools"][""]
+        self.assertEqual((month["label"], month["pace"]), ("30d", -9.0))
+        (week,) = self.providers["grok"]["pools"][""]
+        self.assertEqual(week["label"], "7d")
 
     def test_pace_uses_codexbar_sign_and_on_pace(self):
         claude = self.providers["claude"]["pools"][""]
