@@ -92,6 +92,8 @@ HARNESSES = {
     "commandcode": (".commandcode", "commandcode", None),
     "copilot": (".copilot", "copilot", "copilot"),
     "grok": (".grok", "grok", "grok"),
+    "pi": (".pi/agent", "opencodego", "pi"),
+    "kilo": (".config/kilo", "opencodego", "kilo"),
 }
 
 
@@ -129,14 +131,16 @@ def load_json(path):
     return data
 
 
-def json_change(path, mutate):
+def json_change(path, mutate, drop_empty=False):
+    """`drop_empty` removes the file once nothing is left in it, for files setup may have created."""
     old = path.read_text() if path.is_file() else None
     data = load_json(path)
     updated = copy.deepcopy(data)
     mutate(updated)
     if updated == data:
         return []
-    return [(path, old, json.dumps(updated, indent=2, ensure_ascii=False) + "\n" if updated or old else None)]
+    keep = updated or (old and not drop_empty)
+    return [(path, old, json.dumps(updated, indent=2, ensure_ascii=False) + "\n" if keep else None)]
 
 
 def status_line(path, line, force, remove=False):
@@ -202,6 +206,31 @@ def opencode(home, bin_path, remove=False):
     return changes + json_change(directory / "cli.json", mutate)
 
 
+def kilo(home, bin_path, remove=False):
+    directory = home / ".config/kilo"
+    shim = directory / MARKER / "tui.js"
+    source = PACKAGE / "agents/kilo.js"
+    text = f"// installed by herdr-codexbar; `herdr-codexbar uninstall` removes it\nimport {{ create }} from {json.dumps(source.as_uri())};\n\nexport default create({json.dumps(bin_path)});\n"
+    entry = f"./{MARKER}/tui.js"
+
+    def mutate(settings):
+        plugins = [plugin for plugin in settings.get("plugin", []) if plugin != entry]
+        settings["plugin"] = plugins if remove else [*plugins, entry]
+        if remove and not plugins:
+            settings.pop("plugin")
+    old = shim.read_text() if shim.is_file() else None
+    changes = [(shim, old, None if remove else text)] if old != (None if remove else text) else []
+    return changes + json_change(directory / "tui.json", mutate, drop_empty=True)
+
+
+def pi(home, bin_path, remove=False):
+    extension = home / ".pi/agent/extensions" / f"{MARKER}.ts"
+    text = (PACKAGE / "agents/pi.ts").read_text().replace("__HERDR_CODEXBAR_BIN__", json.dumps(bin_path)[1:-1])
+    old = extension.read_text() if extension.is_file() else None
+    new = None if remove else text
+    return [(extension, old, new)] if old != new else []
+
+
 def commandcode(home, bin_path, remove=False):
     mod = home / ".commandcode/mods" / f"{MARKER}.ts"
     text = (PACKAGE / "agents/commandcode.ts").read_text().replace("__HERDR_CODEXBAR_BIN__", json.dumps(bin_path)[1:-1])
@@ -245,6 +274,10 @@ def plan(home, bin_path, force=False, remove=False):
         changes += opencode(home, bin_path, remove)
     if "commandcode" in harnesses:
         changes += commandcode(home, bin_path, remove)
+    if "kilo" in harnesses:
+        changes += kilo(home, bin_path, remove)
+    if "pi" in harnesses:
+        changes += pi(home, bin_path, remove)
     return changes, undo
 
 
@@ -395,7 +428,7 @@ def check():
         print(f"      {provider:<12} {detail}")
 
     harnesses = installed(home)
-    report(bool(harnesses), f"agents found: {', '.join(harnesses) or 'none'}", "install Claude Code, Codex, OpenCode, Antigravity CLI, Command Code, Copilot CLI or Grok Build")
+    report(bool(harnesses), f"agents found: {', '.join(harnesses) or 'none'}", "install a supported agent, such as Claude Code, Codex, OpenCode or Pi")
     result = run([herdr, "integration", "status"]) if herdr else None
     status = result.stdout if result else ""
     for name in harnesses:
