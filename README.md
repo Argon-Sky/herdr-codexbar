@@ -1,5 +1,12 @@
 <div align="center">
-  <h1>herdr-codexbar</h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="docs/logo-light.svg">
+    <img alt="Herdr × CodexBar" src="docs/logo-light.svg" width="80%">
+  </picture>
+</div>
+
+<div align="center">
   <h3>Subscription quota for your coding agents, right where you run them</h3>
 </div>
 
