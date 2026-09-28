@@ -29,6 +29,7 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 | Claude Pro | $20 | tied: Claude Code | ✅ 5h, weekly | done |
 | ChatGPT Plus | $20 | portable: sign-in with ChatGPT | ✅ 5h, weekly | done |
 | Google AI Pro | $20 | tied: Antigravity CLI | ✅ per model pool | done |
+| SuperGrok (or X Premium+) | $30 | tied: Grok Build | ✅ weekly | done |
 | OpenCode Go | $10 | portable: API key | ✅ 5h, weekly, monthly | done |
 | Command Code GOAT | $10 | portable: API key | ✅ 5h, weekly, monthly | done |
 | GitHub Copilot Pro | $10 | portable: sign-in with GitHub | ✅ monthly premium requests | done |
@@ -37,9 +38,7 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 | GLM Coding Plan Lite (Z.ai) | $18 | portable: API key | ● 5h, weekly | roadmap |
 | Kimi Code | $19 | portable: API key | ● 5h, weekly | roadmap |
 | MiniMax Token Plan Plus | $22 | portable: API key | ● 5h, weekly | roadmap |
-| Alibaba Cloud Coding Plan | $50 | portable: API key | ● | roadmap |
 | Qwen Cloud Token Plan | $6–10 | portable: API key | ● 5h, weekly | roadmap |
-| BytePlus ModelArk Coding Plan | $10 | portable: API key | — (CodexBar tracks the Volcengine edition only) | roadmap |
 | Xiaomi MiMo Token Plan Lite | $6 | portable: API key | ● monthly tokens | roadmap |
 | Mistral Pro | $14.99 | tied: Mistral Vibe | ● Vibe allowance | roadmap |
 | Meta Muse Code | $5–15 | tied: Muse Code | ● | roadmap |
@@ -49,7 +48,6 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 | Augment Code Standard | $20 | tied: Auggie | ● credits | roadmap |
 | Devin Pro | $20 | tied: Devin CLI | ● daily, weekly | roadmap |
 | Qoder Pro | $20 | tied: Qoder CLI | ● credits | roadmap |
-| SuperGrok (or X Premium+) | $30 | tied: Grok Build | ✅ weekly | done |
 
 ## Harnesses
 
@@ -64,8 +62,8 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 | Command Code | — (self-reported) | mod | done | — |
 | Copilot CLI | session | status line | done | Copilot shows no reasoning effort |
 | Grok Build | session | status line | done | — |
-| Pi | lifecycle | extension (`model_select`) | now | Build the extension; test ChatGPT, OpenCode Go, Command Code |
-| Kilo CLI | lifecycle | plugin (OpenCode fork) | now | Port the OpenCode plugin; test ChatGPT, OpenCode Go, Command Code |
+| Pi | lifecycle | extension | done | Test ChatGPT, Copilot, Command Code |
+| Kilo CLI | lifecycle | TUI plugin | done | Test Command Code, Kilo Pass once CodexBar tracks it |
 | Oh My Pi | lifecycle | extension (Pi fork) | next | Reuse the Pi extension |
 | Prime Agent | — | extension (Pi fork) | next | Reuse the Pi extension; self-report the agent |
 | Cline CLI | detected | hooks | next | Test ChatGPT, OpenCode Go, Command Code |
@@ -89,29 +87,29 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 
 ## Portable subscriptions × harnesses
 
-| Harness | ChatGPT | Copilot | OC Go | Cmd Code | ClinePass | Kilo Pass | GLM | Kimi | MiniMax | Alibaba | Qwen Cloud | BytePlus | MiMo |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Claude Code | — | — | ● | ○ | — | — | ● | ● | ● | ● | ● | ● | ● |
-| Codex | ✅ | — | ● | ○ | ? | ? | ? | ? | ? | ? | ? | ● | ? |
-| OpenCode | ● | ● | ✅ | ✅ | ○ | ○ | ● | ● | ○ | ○ | ○ | ● | ● |
-| Kilo CLI | ? | ? | ● | ○ | ○ | ● | ○ | ○ | ○ | ● | ○ | ● | ● |
-| Pi | ● | ● | ● | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Oh My Pi | ● | ● | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Prime Agent | ? | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Cline CLI | ● | — | ○ | ○ | ● | ○ | ● | ○ | ○ | ○ | ○ | ● | ● |
-| Mastra Code | ● | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Qwen Code | — | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ● | ● | ○ | ○ |
-| Droid | ? | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Crush | ● | ● | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| jcode | ● | ● | ● | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Letta Code | ● | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |
-| Maki | ? | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Reasonix | — | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Kimi Code | — | — | ! | ○ | ○ | ○ | ○ | ● | ○ | ○ | ○ | ○ | ○ |
-| Copilot CLI | — | ✅ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Qoder CLI | — | — | ? | ? | ? | ? | ? | ? | ? | ● | ● | ? | ? |
-| Mistral Vibe | — | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Amp | ● | — | — | — | — | — | — | — | — | — | — | — | — |
+| Harness | ChatGPT | Copilot | OC Go | Cmd Code | ClinePass | Kilo Pass | GLM | Kimi | MiniMax | Qwen Cloud | MiMo |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Claude Code | — | — | ● | ○ | — | — | ● | ● | ● | ● | ● |
+| Codex | ✅ | — | ● | ○ | ? | ? | ? | ? | ? | ? | ? |
+| OpenCode | ● | ● | ✅ | ✅ | ○ | ○ | ● | ● | ○ | ○ | ● |
+| Kilo CLI | ? | ? | ✅ | ○ | ○ | ● | ○ | ○ | ○ | ○ | ● |
+| Pi | ● | ● | ✅ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Oh My Pi | ● | ● | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Prime Agent | ? | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Cline CLI | ● | — | ○ | ○ | ● | ○ | ● | ○ | ○ | ○ | ● |
+| Mastra Code | ● | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Qwen Code | — | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ● | ○ |
+| Droid | ? | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Crush | ● | ● | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| jcode | ● | ● | ● | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Letta Code | ● | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |
+| Maki | ? | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Reasonix | — | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Kimi Code | — | — | ! | ○ | ○ | ○ | ○ | ● | ○ | ○ | ○ |
+| Copilot CLI | — | ✅ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Qoder CLI | — | — | ? | ? | ? | ? | ? | ? | ? | ● | ? |
+| Mistral Vibe | — | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Amp | ● | — | — | — | — | — | — | — | — | — | — |
 
 Antigravity CLI, Command Code, Grok Build, Kiro CLI, Cursor CLI, Devin CLI, Muse Code and Auggie take no portable subscription: every cell would be —.
 
@@ -174,9 +172,7 @@ Notes:
 - [GLM Coding Plan](https://docs.z.ai/devpack/overview)
 - [Kimi Code membership](https://www.kimi.com/en/help/kimi-code/membership-guide)
 - [MiniMax Token Plan](https://platform.minimax.io/docs/token-plan/intro)
-- [Alibaba Cloud Model Studio: third-party tools](https://help.aliyun.com/en/model-studio/more-tools)
 - [Qwen Cloud Token Plan](https://docs.qwencloud.com/token-plan/personal/token-plan-personal-overview)
-- [BytePlus ModelArk Coding Plan](https://ai.byteplus.com/en/activity/codingplan)
 - [Xiaomi MiMo Token Plan](https://mimo.mi.com/docs/en-US/news/latest/token-plan-release)
 - [Mistral Vibe](https://mistral.ai/products/vibe/)
 - [Google Antigravity FAQ](https://antigravity.google/docs/faq/)
