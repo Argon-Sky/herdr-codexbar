@@ -12,6 +12,7 @@ Last reviewed: 2026-09-28.
 | --- | --- |
 | ✅ | Works in herdr-codexbar and tested |
 | ● | Documented as supported by the subscription's provider or the harness |
+| ◐ | Documented for some of the plan's models only |
 | ○ | Should work through the harness's custom provider setting; not documented by the provider |
 | ? | Not verified yet |
 | ! | The provider documents problems with this harness |
@@ -89,8 +90,8 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 
 | Harness | ChatGPT | Copilot | Grok | OC Go | Cmd Code | ClinePass | Kilo Pass | GLM | Kimi | MiniMax | Qwen Cloud | MiMo |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Claude Code | — | — | — | ● | ○ | — | — | ● | ● | ● | ● | ● |
-| Codex | ✅ | — | ? | ● | ○ | ? | ? | ? | ? | ? | ? | ? |
+| Claude Code | — | — | — | ◐ | ○ | — | — | ● | ● | ● | ● | ● |
+| Codex | ✅ | — | ? | ◐ | ○ | ? | ? | ? | ? | ? | ? | ? |
 | OpenCode | ✅ | ● | ✅ | ✅ | ✅ | ○ | ○ | ● | ● | ○ | ○ | ● |
 | Kilo CLI | ✅ | ? | ✅ | ✅ | ○ | ○ | ● | ○ | ○ | ○ | ○ | ● |
 | Pi | ✅ | ✅ | ✅ | ✅ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
@@ -117,6 +118,8 @@ Antigravity CLI, Command Code, Kiro CLI, Cursor CLI, Devin CLI, Muse Code and Au
 Notes:
 
 - Claude Code accepts only Anthropic-compatible endpoints, so OpenAI-only plans (ClinePass, Kilo Pass) are out. Codex accepts only the OpenAI Responses API, which several plans do not document; those cells are `?`.
+- OpenCode Go serves each model family on one API only. Claude Code reaches the ones on its Anthropic endpoint (MiniMax and Qwen); Codex reaches the ones on its Responses endpoint (GPT Luna, Grok and Muse Spark). The rest (GLM, Kimi, DeepSeek and others) need a harness that speaks Chat Completions.
+- Translating proxies such as Codex Router or LiteLLM, which put other APIs behind Claude Code or Codex, are not supported: the harness then reports the proxy, not the plan.
 - OpenCode Go expects clients to send a session header and lists the ones it has validated (Claude Code, Codex, Pi, jcode, Kilo CLI). Other harnesses may be throttled, and it flags Kimi Code as problematic.
 - SuperGrok works outside Grok Build through the xAI sign-in that Pi and Kilo CLI offer. An xAI API key uses the same provider ID, so it would show the subscription's quota too.
 - Plans restrict use to coding tools; scripts and automations are not allowed on most of them.
