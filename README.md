@@ -1,8 +1,8 @@
 <div align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
-    <source media="(prefers-color-scheme: light)" srcset="docs/logo-light.svg">
-    <img alt="Herdr × CodexBar" src="docs/logo-light.svg" width="80%">
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo-dark.svg">
+    <source media="(prefers-color-scheme: light)" srcset="assets/logo-light.svg">
+    <img alt="Herdr × CodexBar" src="assets/logo-light.svg" width="80%">
   </picture>
 </div>
 
@@ -19,9 +19,11 @@
 
 <br>
 
+<div align="justify">
+
 An add-on for [Herdr](https://github.com/herdrdev/herdr) that shows, under each agent in the sidebar, which subscription it is using and how much quota is left. It works with 11 coding agents and 7 subscriptions, and reads the numbers from [CodexBar](https://github.com/steipete/CodexBar), so it never needs your credentials.
 
-<p align="center"><img src="docs/sidebar.png" width="600" alt="Herdr sidebar with six agents: each shows its subscription plan, model, effort and context, and a colored bar per quota window with the percent left, whether usage is in reserve, on pace or in deficit, and the time to reset."></p>
+<p align="center"><img src="assets/sidebar.png" width="600" alt="Herdr sidebar with six agents: each shows its subscription plan, model, effort and context, and a colored bar per quota window with the percent left, whether usage is in reserve, on pace or in deficit, and the time to reset."></p>
 
 ## Why this one
 
@@ -142,3 +144,5 @@ node --test tests/*.test.js tests/*.test.ts
 ```
 
 Not affiliated with Herdr, CodexBar or any provider.
+
+</div>
