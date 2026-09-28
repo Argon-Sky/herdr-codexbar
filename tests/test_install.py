@@ -94,6 +94,15 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(after.pop(grok), before.pop(grok))
         self.assertEqual({path: json.loads(text) for path, text in after.items()}, {path: json.loads(text) for path, text in before.items()})
 
+    def test_detects_the_codex_daemon(self):
+        pid_file = self.home / ".codex/app-server-daemon/daemon.pid"
+        self.assertFalse(install.codex_daemon_running(self.home))
+        pid_file.parent.mkdir(parents=True)
+        pid_file.write_text(json.dumps({"pid": os.getpid()}))
+        self.assertTrue(install.codex_daemon_running(self.home))
+        pid_file.write_text("not json")
+        self.assertFalse(install.codex_daemon_running(self.home))
+
 
 if __name__ == "__main__":
     unittest.main()

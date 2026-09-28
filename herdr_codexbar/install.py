@@ -402,6 +402,16 @@ def fonts(home):
     return [name for name in names if name.lower().startswith("firacode") or "nerdfont" in name.lower().replace(" ", "")]
 
 
+def codex_daemon_running(home):
+    """Whether Codex's shared app server is running (Codex 0.158 and later)."""
+    try:
+        pid = json.loads((home / ".codex/app-server-daemon/daemon.pid").read_text())["pid"]
+        os.kill(pid, 0)
+    except (OSError, ValueError, KeyError, TypeError):
+        return False
+    return True
+
+
 def check():
     home = home_dir()
     problems = warnings = 0
@@ -450,6 +460,7 @@ def check():
         except (OSError, ValueError):
             hooks_on = False
         report(hooks_on, "Codex hooks enabled", "add `hooks = true` under [features] in ~/.codex/config.toml")
+        report(not codex_daemon_running(home), "Codex runs each pane's sessions itself", "start Codex with `--no-daemon` and run `codex app-server daemon stop`: its shared background server runs every session's hooks as the pane that started it, so the other panes show nothing", required=False)
 
     try:
         bin_path = command()

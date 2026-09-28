@@ -23,7 +23,7 @@ Subscription quota for your coding agents, right where you run them. herdr-codex
 | Agent | How it reports | Quota it shows |
 | --- | --- | --- |
 | [Claude Code](https://claude.com/claude-code) | status-line command | Claude |
-| [Codex](https://github.com/openai/codex) | hooks (turn on `hooks = true` under `[features]` in `~/.codex/config.toml`) | ChatGPT plan |
+| [Codex](https://github.com/openai/codex) | hooks (turn on `hooks = true` under `[features]` in `~/.codex/config.toml`, and start Codex with `--no-daemon`) | ChatGPT plan |
 | [OpenCode](https://opencode.ai) | TUI plugin | follows the selected model's provider |
 | [Antigravity CLI](https://antigravity.google) | status-line command | Google AI plan, Gemini or Claude & GPT pool |
 | [Command Code](https://commandcode.ai) | mod | Command Code plan |
@@ -86,6 +86,7 @@ Run `herdr-codexbar check` first. It shows what is missing and how to fix it. Th
 
 - **Bars show as boxes or question marks:** your terminal font is not Fira Code 6+ or a Nerd Font 3+.
 - **Rows are cut off:** the sidebar needs 65 columns. `setup` sets it to 70 when you have not set it, and `check` warns when your own width is narrower.
+- **Only one Codex pane shows rows:** Codex 0.158 and later run every session in one shared background server by default, and its hooks report as the pane that started it. Start Codex with `--no-daemon`, for example `alias codex="codex --no-daemon"`, and stop the running server with `codex app-server daemon stop`. `check` warns while it runs.
 - **An agent shows no rows:** your `[ui.sidebar.agents.rows_by_agent]` has its own layout for that agent, which Herdr uses instead of ours. `check` tells you which.
 
 Still stuck? [Open an issue](https://github.com/Argon-Sky/herdr-codexbar/issues) with the output of `herdr-codexbar check`.
