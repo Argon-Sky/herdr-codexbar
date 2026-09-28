@@ -91,7 +91,7 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Claude Code | — | — | — | ● | ○ | — | — | ● | ● | ● | ● | ● |
 | Codex | ✅ | — | ? | ● | ○ | ? | ? | ? | ? | ? | ? | ? |
-| OpenCode | ● | ● | ? | ✅ | ✅ | ○ | ○ | ● | ● | ○ | ○ | ● |
+| OpenCode | ✅ | ● | ✅ | ✅ | ✅ | ○ | ○ | ● | ● | ○ | ○ | ● |
 | Kilo CLI | ✅ | ? | ✅ | ✅ | ○ | ○ | ● | ○ | ○ | ○ | ○ | ● |
 | Pi | ✅ | ✅ | ✅ | ✅ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
 | Oh My Pi | ✅ | ✅ | ✅ | ✅ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
