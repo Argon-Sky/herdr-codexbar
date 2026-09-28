@@ -17,7 +17,9 @@ from pathlib import Path
 from . import STATE_DIR, codexbar, render
 
 # Harness -> Herdr agent ID shown by `herdr pane list`.
-HARNESSES = {"claude": "claude", "codex": "codex", "antigravity": "agy", "opencode": "opencode", "commandcode": "cmd", "copilot": "copilot", "grok": "grok", "pi": "pi", "kilo": "kilo"}
+HARNESSES = {"claude": "claude", "codex": "codex", "antigravity": "agy", "opencode": "opencode", "commandcode": "cmd", "copilot": "copilot", "grok": "grok", "pi": "pi", "kilo": "kilo", "omp": "omp", "prime": "prime-agent"}
+# Harnesses Herdr does not detect: their plugin reports the agent ID itself.
+SELF_REPORTED = {"prime": "prime-agent"}
 # Herdr names Command Code panes `cmd · <model>`; the model has its own row, so show the bare agent ID.
 PLAIN_NAMES = ("commandcode",)
 # Provider ID reported by a harness -> CodexBar provider. OpenCode custom providers

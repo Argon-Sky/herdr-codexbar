@@ -14,7 +14,7 @@ BIN = "/opt/homebrew/bin/herdr-codexbar"
 class InstallTests(unittest.TestCase):
     def setUp(self):
         self.home = Path(tempfile.mkdtemp())
-        for directory in (".claude", ".codex", ".gemini/antigravity-cli", ".config/opencode", ".commandcode", ".copilot", ".grok", ".pi/agent", ".config/kilo"):
+        for directory in (".claude", ".codex", ".gemini/antigravity-cli", ".config/opencode", ".commandcode", ".copilot", ".grok", ".pi/agent", ".config/kilo", ".omp/agent", ".prime/agent"):
             (self.home / directory).mkdir(parents=True)
         (self.home / ".codex/hooks.json").write_text(json.dumps({"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "notify"}]}]}}))
         (self.home / ".config/opencode/cli.json").write_text(json.dumps({"plugins": ["./herdr-opencode"]}))
@@ -50,7 +50,11 @@ class InstallTests(unittest.TestCase):
         self.assertIn('/herdr_codexbar/agents/opencode.js', shim)
         self.assertEqual(self.read(".config/kilo/tui.json"), {"plugin": ["./herdr-codexbar/tui.js"]})
         self.assertIn('/herdr_codexbar/agents/kilo.js', (self.home / ".config/kilo/herdr-codexbar/tui.js").read_text())
-        self.assertIn(f'const COMMAND = "{BIN}";', (self.home / ".pi/agent/extensions/herdr-codexbar.ts").read_text())
+        for directory, harness, agent in ((".pi", "pi", ""), (".omp", "omp", ""), (".prime", "prime", "prime-agent")):
+            extension = (self.home / directory / "agent/extensions/herdr-codexbar.ts").read_text()
+            self.assertIn(f'const COMMAND = "{BIN}";', extension)
+            self.assertIn(f'const HARNESS = "{harness}";', extension)
+            self.assertIn(f'const AGENT = "{agent}";', extension)
         mod = (self.home / ".commandcode/mods/herdr-codexbar.ts").read_text()
         self.assertIn(f'const COMMAND = "{BIN}";', mod)
         config = tomllib.loads((self.home / ".config/herdr/config.toml").read_text())

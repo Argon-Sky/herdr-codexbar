@@ -93,6 +93,8 @@ HARNESSES = {
     "copilot": (".copilot", "copilot", "copilot"),
     "grok": (".grok", "grok", "grok"),
     "pi": (".pi/agent", "opencodego", "pi"),
+    "omp": (".omp/agent", "opencodego", "omp"),
+    "prime": (".prime/agent", "opencodego", None),
     "kilo": (".config/kilo", "opencodego", "kilo"),
 }
 
@@ -223,9 +225,13 @@ def kilo(home, bin_path, remove=False):
     return changes + json_change(directory / "tui.json", mutate, drop_empty=True)
 
 
-def pi(home, bin_path, remove=False):
-    extension = home / ".pi/agent/extensions" / f"{MARKER}.ts"
-    text = (PACKAGE / "agents/pi.ts").read_text().replace("__HERDR_CODEXBAR_BIN__", json.dumps(bin_path)[1:-1])
+def pi(home, bin_path, harness, remove=False):
+    """Pi, Oh My Pi and Prime Agent share one extension; Herdr does not detect Prime Agent, so it reports the agent too."""
+    extension = home / HARNESSES[harness][0] / "extensions" / f"{MARKER}.ts"
+    fill = {"__HERDR_CODEXBAR_BIN__": bin_path, "__HERDR_CODEXBAR_HARNESS__": harness, "__HERDR_CODEXBAR_AGENT__": panes.SELF_REPORTED.get(harness, "")}
+    text = (PACKAGE / "agents/pi.ts").read_text()
+    for placeholder, value in fill.items():
+        text = text.replace(placeholder, json.dumps(value)[1:-1])
     old = extension.read_text() if extension.is_file() else None
     new = None if remove else text
     return [(extension, old, new)] if old != new else []
@@ -276,8 +282,9 @@ def plan(home, bin_path, force=False, remove=False):
         changes += commandcode(home, bin_path, remove)
     if "kilo" in harnesses:
         changes += kilo(home, bin_path, remove)
-    if "pi" in harnesses:
-        changes += pi(home, bin_path, remove)
+    for harness in ("pi", "omp", "prime"):
+        if harness in harnesses:
+            changes += pi(home, bin_path, harness, remove)
     return changes, undo
 
 
