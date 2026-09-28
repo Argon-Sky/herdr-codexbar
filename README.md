@@ -30,6 +30,8 @@ Subscription quota for your coding agents, right where you run them. herdr-codex
 | [GitHub Copilot CLI](https://github.com/features/copilot/cli) | status-line command | Copilot plan, monthly premium requests |
 | [Grok Build](https://x.ai/cli) | status-line command (`[ui.status_line]` in `~/.grok/config.toml`) | Grok plan |
 
+The [compatibility matrix](docs/compatibility.md) covers every harness and subscription we know of: what works, what each harness can bill, and what is planned.
+
 ## Install
 
 ```sh
@@ -89,7 +91,7 @@ Still stuck? [Open an issue](https://github.com/Argon-Sky/herdr-codexbar/issues)
 Ideas, not promises. Upvote or comment on the [roadmap issues](https://github.com/Argon-Sky/herdr-codexbar/issues?q=is%3Aissue+label%3Aroadmap) to move them up.
 
 - Linux, once CodexBar's CLI runs there.
-- Every agent Herdr supports, such as Pi and Gemini CLI.
+- More agents, starting with Pi and Kilo CLI. The [compatibility matrix](docs/compatibility.md) lists every harness and subscription with its status.
 - Session tokens and API-equivalent cost.
 - Quota for API and credit billing.
 - A compact layout for narrow sidebars, if people ask for it.
