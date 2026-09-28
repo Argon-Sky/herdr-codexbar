@@ -39,6 +39,7 @@ PROVIDERS = {
     "copilot": "copilot",
     "grok": "grok",
     "xai": "grok",  # Pi and Kilo's xAI sign-in; an xAI API key shows the same quota
+    "xai-oauth": "grok",  # Oh My Pi's xAI sign-in
 }
 POOL_NAMES = {"gemini": "Gemini", "claude-gpt": "Claude & GPT"}
 PACE_STATES = ("reserve", "pace", "deficit")
