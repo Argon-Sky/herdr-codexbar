@@ -22,35 +22,30 @@ Subscription quota for your coding agents, right where you run them. herdr-codex
 
 ## Coverage
 
-Tested with these subscriptions:
+| Harness ╲ Subscription | Claude Pro | ChatGPT Plus | X Premium+ | Google AI Pro | OpenCode Go | Command Code GOAT | Copilot Pro |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| [Claude Code](https://claude.com/claude-code) | ✅ | ❌ | ❌ | ❌ | ❔ | ❔ | ❌ |
+| [Codex](https://github.com/openai/codex) | ❌ | ✅ | ❔ | ❌ | ❔ | ❔ | ❌ |
+| [Grok Build](https://x.ai/cli) | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| [Antigravity CLI](https://antigravity.google) | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| [OpenCode](https://opencode.ai) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ❔ |
+| [Command Code](https://commandcode.ai) | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| [GitHub Copilot CLI](https://github.com/features/copilot/cli) | ❌ | ❌ | ❔ | ❌ | ❔ | ❔ | ✅ |
+| [Pi](https://github.com/earendil-works/pi) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ❔ | ✅ |
+| [Oh My Pi](https://github.com/can1357/oh-my-pi) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ❔ | ✅ |
+| [Prime Agent](https://github.com/PrimeIntellect-ai/prime-agent) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ❔ | ✅ |
+| [Kilo CLI](https://github.com/Kilo-Org/kilocode) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ❔ | ❔ |
 
-| Provider | Subscription |
-| --- | --- |
-| Anthropic | Claude Pro |
-| OpenAI | ChatGPT Plus |
-| xAI | X Premium+ (or SuperGrok) |
-| Google | Google AI Pro |
-| OpenCode | OpenCode Go |
-| Command Code | Command Code GOAT |
-| GitHub | Copilot Pro |
+- ✅ Integrated in herdr-codexbar and tested
+- ❔ Not verified
+- ❌ Not possible, as far as we know
+- ⚠️ Technically possible, but against the provider's terms; not supported
 
-And these agents:
+Notes:
 
-| Agent | Command | How it reports | Quota it shows |
-| --- | --- | --- | --- |
-| [Claude Code](https://claude.com/claude-code) | `claude` | status-line command | Claude |
-| [Codex](https://github.com/openai/codex) | `codex` | hooks (turn on `hooks = true` under `[features]` in `~/.codex/config.toml`, and start Codex with `--no-daemon`) | ChatGPT plan |
-| [OpenCode](https://opencode.ai) | `opencode` | TUI plugin | follows the selected model's provider |
-| [Antigravity CLI](https://antigravity.google) | `agy` | status-line command | Google AI plan, Gemini or Claude & GPT pool |
-| [Command Code](https://commandcode.ai) | `cmd` | mod | Command Code plan |
-| [GitHub Copilot CLI](https://github.com/features/copilot/cli) | `copilot` | status-line command | Copilot plan, monthly premium requests |
-| [Grok Build](https://x.ai/cli) | `grok` | status-line command (`[ui.status_line]` in `~/.grok/config.toml`) | Grok plan |
-| [Pi](https://github.com/earendil-works/pi) | `pi` | extension | follows the selected model's provider |
-| [Kilo CLI](https://github.com/Kilo-Org/kilocode) | `kilo` | TUI plugin | follows the model of the newest message |
-| [Oh My Pi](https://github.com/can1357/oh-my-pi) | `omp` | extension | follows the selected model's provider |
-| [Prime Agent](https://github.com/PrimeIntellect-ai/prime-agent) | `prime-agent` | extension | follows the selected model's provider |
-
-Portable subscriptions (ChatGPT, xAI, OpenCode Go, Command Code, Copilot) work in any of these agents that can use them. The [coverage matrix](docs/coverage.md) shows which combinations are tested and what each harness can use.
+- Codex needs `hooks = true` under `[features]` in `~/.codex/config.toml`, and must be started with `--no-daemon`. Its quota appears after the first message.
+- Claude Code and Codex reach only some OpenCode Go models: MiniMax and Qwen in Claude Code, GPT Luna, Grok and Muse Spark in Codex. Translating proxies such as LiteLLM are not supported.
+- SuperGrok works like X Premium+, and higher tiers (Claude Max, ChatGPT Pro and similar) like the plans above.
 
 ## Install
 
