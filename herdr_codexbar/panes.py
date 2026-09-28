@@ -27,6 +27,7 @@ PROVIDERS = {
     "claude": "claude",
     "openai": "codex",
     "codex": "codex",
+    "openai-codex": "codex",  # Pi's ChatGPT sign-in
     "antigravity": "antigravity",
     "opencode-go": "opencodego",
     "opencodego": "opencodego",
@@ -35,6 +36,7 @@ PROVIDERS = {
     "github-copilot": "copilot",
     "copilot": "copilot",
     "grok": "grok",
+    "xai": "grok",  # Pi and Kilo's xAI sign-in; an xAI API key shows the same quota
 }
 POOL_NAMES = {"gemini": "Gemini", "claude-gpt": "Claude & GPT"}
 PACE_STATES = ("reserve", "pace", "deficit")

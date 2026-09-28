@@ -54,12 +54,12 @@ Each agent reports the provider ID it is using. herdr-codexbar maps that ID to a
 | Provider ID | CodexBar quota |
 | --- | --- |
 | `anthropic` | Claude |
-| `openai` | Codex |
+| `openai`, `openai-codex` | Codex |
 | `antigravity` | Antigravity, pool by model |
 | `opencode-go` | OpenCode Go |
 | `commandcode` | Command Code |
 | `github-copilot` | Copilot, monthly premium requests |
-| `grok` | Grok |
+| `grok`, `xai` | Grok |
 
 Other providers, such as OpenCode Zen, have no quota in CodexBar, so the pane shows its model and context only. In OpenCode, Kilo CLI and Pi, a custom provider shows a subscription's quota when you name it after the CodexBar provider, for example `commandcode` for a Command Code plan used through its OpenAI-compatible API.
 
