@@ -59,6 +59,7 @@ Gemini CLI is not covered: since June 18, 2026, Google AI Pro and Ultra users ar
 | Claude Code | — | — | ◐ | ○ | — |
 | Codex | ✅ | ? | ◐ | ○ | — |
 | Grok Build | — | ✅ | — | — | — |
+| Antigravity CLI | — | — | — | — | — |
 | OpenCode | ✅ | ✅ | ✅ | ✅ | ● |
 | Command Code | — | — | — | ✅ | — |
 | GitHub Copilot CLI | — | ? | ○ | ○ | ✅ |
@@ -66,8 +67,6 @@ Gemini CLI is not covered: since June 18, 2026, Google AI Pro and Ultra users ar
 | Oh My Pi | ✅ | ✅ | ✅ | ○ | ✅ |
 | Prime Agent | ✅ | ✅ | ✅ | ○ | ✅ |
 | Kilo CLI | ✅ | ✅ | ✅ | ○ | ? |
-
-Antigravity CLI takes no portable subscription.
 
 Notes:
 
