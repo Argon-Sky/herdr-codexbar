@@ -64,8 +64,8 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 | Grok Build | session | status line | done | — |
 | Pi | lifecycle | extension | done | Test Command Code |
 | Kilo CLI | lifecycle | TUI plugin | done | Test Copilot, Command Code, and Kilo Pass once CodexBar tracks it |
-| Oh My Pi | lifecycle | extension (Pi fork) | next | Reuse the Pi extension |
-| Prime Agent | — | extension (Pi fork) | next | Reuse the Pi extension; self-report the agent |
+| Oh My Pi | lifecycle | extension (Pi's) | done | Test Command Code; a model switch shows at the next turn |
+| Prime Agent | — (self-reported) | extension (Pi's) | done | Test Command Code |
 | Cline CLI | detected | hooks | next | Test ChatGPT, OpenCode Go, Command Code |
 | Mastra Code | lifecycle | hooks | next | Test ChatGPT, OpenCode Go, Command Code |
 | Qwen Code | session | hooks | next | Test OpenCode Go, Command Code |
@@ -94,8 +94,8 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 | OpenCode | ● | ● | ? | ✅ | ✅ | ○ | ○ | ● | ● | ○ | ○ | ● |
 | Kilo CLI | ✅ | ? | ✅ | ✅ | ○ | ○ | ● | ○ | ○ | ○ | ○ | ● |
 | Pi | ✅ | ✅ | ✅ | ✅ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Oh My Pi | ● | ● | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Prime Agent | ? | ? | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Oh My Pi | ✅ | ✅ | ✅ | ✅ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Prime Agent | ✅ | ✅ | ✅ | ✅ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
 | Cline CLI | ● | — | ? | ○ | ○ | ● | ○ | ● | ○ | ○ | ○ | ● |
 | Mastra Code | ● | ? | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
 | Qwen Code | — | — | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ● | ○ |

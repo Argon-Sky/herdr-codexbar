@@ -31,6 +31,8 @@ Subscription quota for your coding agents, right where you run them. herdr-codex
 | [Grok Build](https://x.ai/cli) | status-line command (`[ui.status_line]` in `~/.grok/config.toml`) | Grok plan |
 | [Pi](https://github.com/earendil-works/pi) | extension | follows the selected model's provider |
 | [Kilo CLI](https://github.com/Kilo-Org/kilocode) | TUI plugin | follows the model of the newest message |
+| [Oh My Pi](https://github.com/can1357/oh-my-pi) | extension | follows the selected model's provider |
+| [Prime Agent](https://github.com/PrimeIntellect-ai/prime-agent) | extension | follows the selected model's provider |
 
 The [compatibility matrix](docs/compatibility.md) covers every harness and subscription we know of: what works, what each harness can bill, and what is planned.
 
@@ -61,7 +63,7 @@ Each agent reports the provider ID it is using. herdr-codexbar maps that ID to a
 | `github-copilot` | Copilot, monthly premium requests |
 | `grok`, `xai`, `xai-oauth` | Grok |
 
-Other providers, such as OpenCode Zen, have no quota in CodexBar, so the pane shows its model and context only. In OpenCode, Kilo CLI and Pi, a custom provider shows a subscription's quota when you name it after the CodexBar provider, for example `commandcode` for a Command Code plan used through its OpenAI-compatible API.
+Other providers, such as OpenCode Zen, have no quota in CodexBar, so the pane shows its model and context only. In OpenCode, Kilo CLI and the Pi family, a custom provider shows a subscription's quota when you name it after the CodexBar provider, for example `commandcode` for a Command Code plan used through its OpenAI-compatible API.
 
 ## Privacy
 
@@ -93,7 +95,7 @@ Still stuck? [Open an issue](https://github.com/Argon-Sky/herdr-codexbar/issues)
 Ideas, not promises. Upvote or comment on the [roadmap issues](https://github.com/Argon-Sky/herdr-codexbar/issues?q=is%3Aissue+label%3Aroadmap) to move them up.
 
 - Linux, once CodexBar's CLI runs there.
-- More agents, next up Oh My Pi, Cline CLI and Droid. The [compatibility matrix](docs/compatibility.md) lists every harness and subscription with its status.
+- More agents, next up Cline CLI, Mastra Code and Droid. The [compatibility matrix](docs/compatibility.md) lists every harness and subscription with its status.
 - Session tokens and API-equivalent cost.
 - Quota for API and credit billing.
 - A compact layout for narrow sidebars, if people ask for it.
