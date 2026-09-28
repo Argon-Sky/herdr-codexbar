@@ -29,4 +29,4 @@ jobs:
       - name: CLI smoke test
         run: |
           bin/herdr-codexbar --version
-          bin/herdr-codexbar bar
+          bin/herdr-codexbar --help

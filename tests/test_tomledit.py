@@ -4,7 +4,6 @@ import unittest
 from herdr_codexbar import tomledit
 
 ROWS = '[["agent"], ["$hc_q1"]]'
-COMMAND = "/opt/homebrew/bin/herdr-codexbar bar"
 DEFAULTS = {"ui": {"sidebar_width": 65, "sidebar_max_width": 80}, "ui.sidebar.agents": {"row_gap": 1}}
 CONFIG = """# my config
 onboarding = false
@@ -28,9 +27,9 @@ pi = [["agent"]]
 
 class SetupTests(unittest.TestCase):
     def test_edits_only_our_keys(self):
-        text, undo = tomledit.setup(CONFIG, COMMAND, ROWS, DEFAULTS)
+        text, undo = tomledit.setup(CONFIG, ROWS, DEFAULTS)
         config = tomllib.loads(text)["ui"]
-        self.assertEqual([item["command"] for item in config["tab_bar_right"]], ["date +%H:%M # clock", COMMAND])
+        self.assertEqual([item["command"] for item in config["tab_bar_right"]], ["date +%H:%M # clock"])
         self.assertEqual(config["sidebar"]["agents"]["rows"], [["agent"], ["$hc_q1"]])
         self.assertEqual(config["sidebar_width"], 48)
         self.assertEqual(config["sidebar"]["agents"]["rows_by_agent"], {"pi": [["agent"]]})
@@ -38,33 +37,26 @@ class SetupTests(unittest.TestCase):
         self.assertEqual(config["sidebar"]["agents"]["row_gap"], 1)
         self.assertEqual(undo, {"rows": '[\n  ["state_icon", "agent"],  # mine\n]', "added": ["sidebar_max_width", "row_gap"]})
 
-    def test_is_idempotent_and_replaces_an_old_command(self):
-        text, _ = tomledit.setup(CONFIG, COMMAND, ROWS, DEFAULTS)
-        self.assertEqual(tomledit.setup(text, COMMAND, ROWS, DEFAULTS)[0], text)
-        moved, _ = tomledit.setup(text, "/usr/local/bin/herdr-codexbar bar", ROWS, DEFAULTS)
-        commands = [item["command"] for item in tomllib.loads(moved)["ui"]["tab_bar_right"]]
-        self.assertEqual(commands, ["date +%H:%M # clock", "/usr/local/bin/herdr-codexbar bar"])
+    def test_is_idempotent(self):
+        text, _ = tomledit.setup(CONFIG, ROWS, DEFAULTS)
+        self.assertEqual(tomledit.setup(text, ROWS, DEFAULTS)[0], text)
 
     def test_uninstall_restores_the_original(self):
-        text, undo = tomledit.setup(CONFIG, COMMAND, ROWS, DEFAULTS)
+        text, undo = tomledit.setup(CONFIG, ROWS, DEFAULTS)
         self.assertEqual(tomledit.uninstall(text, undo), CONFIG)
 
     def test_empty_config(self):
-        text, undo = tomledit.setup("", COMMAND, ROWS, DEFAULTS)
+        text, undo = tomledit.setup("", ROWS, DEFAULTS)
         config = tomllib.loads(text)["ui"]
         self.assertEqual((config["sidebar_width"], config["sidebar_max_width"], config["sidebar"]["agents"]["row_gap"]), (65, 80, 1))
         self.assertEqual(undo["added"], ["sidebar_width", "sidebar_max_width", "row_gap"])
         restored = tomllib.loads(tomledit.uninstall(text, undo))
-        self.assertEqual(restored, {"ui": {"tab_bar_right": [], "sidebar": {"agents": {}}}})
-
-    def test_single_line_array(self):
-        text, _ = tomledit.setup('[ui]\ntab_bar_right = [{ type = "command", command = "a" }]\n', COMMAND, ROWS, DEFAULTS)
-        self.assertEqual(len(tomllib.loads(text)["ui"]["tab_bar_right"]), 2)
+        self.assertEqual(restored, {"ui": {"sidebar": {"agents": {}}}})
 
     def test_refuses_dotted_and_inline_forms(self):
-        for config in ('ui.tab_bar_right = []\n', '[ui]\nsidebar = { agents = { rows = [] } }\n', '[ui.sidebar]\nagents.rows = []\n'):
+        for config in ('ui.sidebar.agents.rows = []\n', '[ui]\nsidebar = { agents = { rows = [] } }\n', '[ui.sidebar]\nagents.rows = []\n'):
             with self.assertRaises(tomledit.Unsupported, msg=config):
-                tomledit.setup(config, COMMAND, ROWS, DEFAULTS)
+                tomledit.setup(config, ROWS, DEFAULTS)
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ import json
 import subprocess
 import sys
 
-from . import ISSUES_URL, __version__, codexbar, harnesses, install, panes, render
+from . import ISSUES_URL, __version__, codexbar, harnesses, install, panes
 
 REPORT_KEYS = ("provider_id", "model", "effort", "context_used", "context_limit", "context_percent")
 
@@ -58,7 +58,7 @@ def refresh():
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(prog="herdr-codexbar", description="Subscription quota from CodexBar in Herdr's tab bar and agent sidebar.", epilog=f"Problems? {ISSUES_URL}")
+    parser = argparse.ArgumentParser(prog="herdr-codexbar", description="Subscription quota from CodexBar in Herdr's agent sidebar.", epilog=f"Problems? {ISSUES_URL}")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     commands = parser.add_subparsers(dest="command", required=True, metavar="command")
     commands.add_parser("check", help="check prerequisites and whether setup is current")
@@ -68,7 +68,6 @@ def main(argv=None):
     uninstall = commands.add_parser("uninstall", help="undo setup")
     uninstall.add_argument("--dry-run", action="store_true", help="show the changes without writing them")
     commands.add_parser("refresh", help="poll CodexBar now and update agent panes")
-    commands.add_parser("bar", help="print the tab-bar text")
     hook_parser = commands.add_parser("hook", help="agent status-line or hook entrypoint (reads JSON on stdin)")
     hook_parser.add_argument("harness", choices=sorted(harnesses.PARSERS))
     commands.add_parser("report", help="plugin entrypoint (reads a report as JSON on stdin)")
@@ -84,9 +83,6 @@ def main(argv=None):
         status = 0
     elif args.command == "refresh":
         status = refresh()
-    elif args.command == "bar":
-        print(render.tab_bar(codexbar.read_snapshot()))
-        status = 0
     elif args.command == "hook":
         status = hook(args.harness)
     else:

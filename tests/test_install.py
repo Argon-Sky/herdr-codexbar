@@ -45,7 +45,7 @@ class InstallTests(unittest.TestCase):
         mod = (self.home / ".commandcode/mods/herdr-codexbar.ts").read_text()
         self.assertIn(f'const COMMAND = "{BIN}";', mod)
         config = tomllib.loads((self.home / ".config/herdr/config.toml").read_text())
-        self.assertEqual(config["ui"]["tab_bar_right"][0]["command"], f"{BIN} bar")
+        self.assertIn("$hc_q1_label", str(config["ui"]["sidebar"]["agents"]["rows"]))
         self.assertEqual(install.plan(self.home, BIN)[0], [])
 
     def test_paths_with_spaces_are_quoted(self):
@@ -76,7 +76,7 @@ class InstallTests(unittest.TestCase):
         after = {path: path.read_text() for path in self.home.rglob("*") if path.is_file()}
         self.assertEqual(after.pop(self.home / ".claude/settings.json"), "{}\n")
         self.assertEqual(after.pop(self.home / ".gemini/antigravity-cli/settings.json"), "{}\n")
-        self.assertEqual(after.pop(config).replace("[ui]\ntab_bar_right = [\n]\n", "").strip(), before.pop(config).strip())
+        self.assertEqual(after.pop(config).strip().removesuffix("[ui]").strip(), before.pop(config).strip())
         self.assertEqual({path: json.loads(text) for path, text in after.items()}, {path: json.loads(text) for path, text in before.items()})
 
 

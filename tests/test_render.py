@@ -39,10 +39,6 @@ class RenderTests(unittest.TestCase):
         parts = render.quota_parts(self.providers["antigravity"]["pools"]["claude-gpt"][1], NOW)
         self.assertEqual((parts["label"], parts["left"], parts["bar"], parts["pace"]), (f"{render.BLANK}7d", "unknown", None, None))
 
-    def test_tab_bar_lists_every_provider(self):
-        self.assertEqual(render.tab_bar(snapshot()), "CC 95/60 · GPT 100/0 · Agy 90/80 3p 100/- · OC 100/18/44 · CMD 4 · GHC 84 · Grok 70")
-        self.assertEqual(render.tab_bar(None), "[quota unavailable]")
-
 
 if __name__ == "__main__":
     unittest.main()

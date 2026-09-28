@@ -1,4 +1,4 @@
-"""Subscription quota from CodexBar in Herdr's tab bar and agent sidebar."""
+"""Subscription quota from CodexBar in Herdr's agent sidebar."""
 
 import os
 from pathlib import Path

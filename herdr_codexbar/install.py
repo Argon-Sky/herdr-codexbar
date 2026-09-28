@@ -198,15 +198,15 @@ def herdr_config_path(home):
     return home / ".config/herdr/config.toml"
 
 
-def herdr_config(home, bin_path, remove=False):
+def herdr_config(home, remove=False):
     """The config change, plus what uninstall needs to undo it (None when the old undo still applies)."""
     path = herdr_config_path(home)
     old = path.read_text() if path.is_file() else ""
     if remove:
         new, undo = tomledit.uninstall(old, read_undo()), None
     else:
-        new, undo = tomledit.setup(old, f"{shlex.quote(bin_path)} bar", ROWS, DEFAULTS)
-        if tomledit.is_ours(old)[1]:
+        new, undo = tomledit.setup(old, ROWS, DEFAULTS)
+        if tomledit.rows_are_ours(old):
             undo = None  # Rows are already ours; keep the undo saved by the first setup.
     return ([(path, old or None, new)] if new != old else []), undo
 
@@ -214,7 +214,7 @@ def herdr_config(home, bin_path, remove=False):
 def plan(home, bin_path, force=False, remove=False):
     line = shlex.quote(bin_path)
     harnesses = installed(home)
-    changes, undo = herdr_config(home, bin_path, remove)
+    changes, undo = herdr_config(home, remove)
     if "claude" in harnesses:
         changes += status_line(home / ".claude/settings.json", f"{line} hook claude", force, remove)
     if "antigravity" in harnesses:

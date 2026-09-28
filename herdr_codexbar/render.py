@@ -1,4 +1,4 @@
-"""Text for the Herdr tab bar and the sidebar quota rows."""
+"""Text for the sidebar quota rows."""
 
 from datetime import datetime, timezone
 
@@ -9,9 +9,6 @@ FILLED = ("", "", "")
 PACE_WIDTH = 16  # "□ 99% in deficit"
 # Herdr trims whitespace around token values; the blank Braille pattern survives and pads columns.
 BLANK = "\u2800"
-# Short tab-bar names, in tab-bar order.
-SHORT_NAMES = {"claude": "CC", "codex": "GPT", "antigravity": "Agy", "opencodego": "OC", "commandcode": "CMD", "copilot": "GHC", "grok": "Grok"}
-POOL_PREFIXES = {"gemini": "", "claude-gpt": "3p "}
 
 
 def parse_time(value):
@@ -110,16 +107,3 @@ def quota_parts(window, now=None):
         "reset": f"↻ {reset:>7}" if reset else None,
     }
 
-
-def tab_bar(snapshot):
-    """`CC 98/100 · GPT 100/0 · Agy 100/100 3p 100/99 · OC 100/18/44`: percent left per window."""
-    if not snapshot:
-        return "[quota unavailable]"
-    providers = snapshot["providers"]
-    parts = []
-    for name in (name for name in SHORT_NAMES if name in providers):
-        pools = providers[name]["pools"]
-        groups = [f"{POOL_PREFIXES.get(pool, '')}{'/'.join(str(percent_left(item)) if item['known'] else '-' for item in items)}"
-                  for pool, items in pools.items()]
-        parts.append(f"{SHORT_NAMES[name]} {' '.join(groups) or '?'}")
-    return " · ".join(parts) or "[quota unavailable]"

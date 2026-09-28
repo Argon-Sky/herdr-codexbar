@@ -1,8 +1,8 @@
 # herdr-codexbar
 
-Subscription quota for your coding agents, right where you run them. herdr-codexbar puts [CodexBar](https://github.com/steipete/CodexBar)'s usage data into [Herdr](https://herdr.dev): a tab-bar summary of every subscription, and under each agent in the sidebar the plan it is billing, its model and context, and how much of each quota window is left.
+Subscription quota for your coding agents, right where you run them. herdr-codexbar puts [CodexBar](https://github.com/steipete/CodexBar)'s usage data into [Herdr](https://herdr.dev): under each agent in the sidebar, the plan it is billing, its model and context, and how much of each quota window is left.
 
-<p align="center"><img src="docs/sidebar.png" width="600" alt="Herdr sidebar with six agents: each shows its subscription plan, model, effort and context, and a colored bar per quota window with the percent left, whether usage is in reserve, on pace or in deficit, and the time to reset. The tab bar sums up all five subscriptions."></p>
+<p align="center"><img src="docs/sidebar.png" width="600" alt="Herdr sidebar with six agents: each shows its subscription plan, model, effort and context, and a colored bar per quota window with the percent left, whether usage is in reserve, on pace or in deficit, and the time to reset."></p>
 
 ## Why this one
 
@@ -10,7 +10,6 @@ Subscription quota for your coding agents, right where you run them. herdr-codex
 - **Quota follows the subscription, not the agent.** Each pane shows the quota of the provider it is talking to right now. OpenCode switching from OpenCode Go to a Command Code model moves the pane to Command Code's quota.
 - **Antigravity's two pools.** Gemini models and third-party models (Claude, GPT) have separate quotas in Antigravity. The pane shows the pool of the model it is using.
 - **Pace, not just percent.** Every window says whether you are ahead of an even burn (■ in reserve), on pace (◪) or behind (□ in deficit), and when it resets.
-- **Every supported subscription at a glance** in the tab bar, including ones no agent is using right now.
 - **A setup you can review and undo.** `setup --dry-run` shows the exact diff, every edited file is backed up, and `uninstall` puts things back.
 
 ## Requirements
@@ -38,9 +37,9 @@ herdr-codexbar setup --dry-run  # the exact diff, nothing written
 herdr-codexbar setup
 ```
 
-`setup` wires each agent it finds, adds the sidebar rows and the tab-bar item to `~/.config/herdr/config.toml`, and starts the poller with `brew services`. Restart running agents afterwards; Codex asks you to approve its new hooks on the first start.
+`setup` wires each agent it finds, adds the sidebar rows to `~/.config/herdr/config.toml`, and starts the poller with `brew services`. Restart running agents afterwards; Codex asks you to approve its new hooks on the first start.
 
-It changes only what it needs: other tab-bar items, comments and settings stay as they are, and every file it edits is backed up first to `~/.cache/herdr-codexbar/backups`. If an agent already has a status line from another tool, `setup` stops and tells you; `setup --force` replaces it.
+It changes only what it needs: comments and other settings stay as they are, and every file it edits is backed up first to `~/.cache/herdr-codexbar/backups`. If an agent already has a status line from another tool, `setup` stops and tells you; `setup --force` replaces it.
 
 ## How provider routing works
 
