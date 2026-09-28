@@ -63,6 +63,8 @@ Each agent reports the provider ID it is using. herdr-codexbar maps that ID to a
 | `github-copilot` | Copilot, monthly premium requests |
 | `grok`, `xai`, `xai-oauth` | Grok |
 
+Claude Code has no provider setting, so its provider follows `ANTHROPIC_BASE_URL`: unset or `https://api.anthropic.com` is `anthropic`, and `https://opencode.ai/zen/go` is `opencode-go`. Any other endpoint, such as a local proxy, shows model and context only. Codex reports the `model_provider` from its config, so name a custom one `opencode-go` to see OpenCode Go quota.
+
 Other providers, such as OpenCode Zen, have no quota in CodexBar, so the pane shows its model and context only. In OpenCode, Kilo CLI and the Pi family, a custom provider shows a subscription's quota when you name it after the CodexBar provider, for example `commandcode` for a Command Code plan used through its OpenAI-compatible API.
 
 ## Privacy

@@ -56,7 +56,7 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 
 | Harness | Herdr | Reads from | Status | Next step |
 | --- | --- | --- | --- | --- |
-| Claude Code | session | status line | done | Route Anthropic-compatible endpoints (OpenCode Go, Command Code) to their quota |
+| Claude Code | session | status line | done | Test OpenCode Go; route Command Code's Anthropic endpoint if it has one |
 | Codex | session | hooks | done | Route custom model providers to their quota |
 | Antigravity CLI | session | status line | done | — |
 | OpenCode | lifecycle | TUI plugin | done | — |

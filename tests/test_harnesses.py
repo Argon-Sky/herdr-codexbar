@@ -57,14 +57,23 @@ class ClaudeTests(unittest.TestCase):
             "effort": {"level": "high"},
             "context_window": {"used_percentage": 12, "context_window_size": 1_000_000,
                                "current_usage": {"input_tokens": 10, "cache_creation_input_tokens": 1_000, "cache_read_input_tokens": 119_000}},
-        })
+        }, {})
         self.assertEqual(report, {"harness": "claude", "provider_id": "anthropic", "model": "Opus 5.5", "effort": "high",
                                   "context_used": 120_010, "context_limit": 1_000_000, "context_percent": 12})
 
     def test_missing_fields(self):
-        report = harnesses.claude({})
+        report = harnesses.claude({}, {})
         self.assertIsNone(report["context_used"])
         self.assertIsNone(report["model"])
+
+    def test_claude_provider_follows_the_base_url(self):
+        self.assertEqual(harnesses.claude_provider(None), "anthropic")
+        self.assertEqual(harnesses.claude_provider("https://api.anthropic.com"), "anthropic")
+        self.assertEqual(harnesses.claude_provider("https://opencode.ai/zen/go"), "opencode-go")
+        self.assertEqual(harnesses.claude_provider("https://OpenCode.ai/zen/go/"), "opencode-go")
+        self.assertIsNone(harnesses.claude_provider("https://opencode.ai/zen"))
+        self.assertIsNone(harnesses.claude_provider("http://localhost:4000"))
+        self.assertEqual(harnesses.claude({}, {"ANTHROPIC_BASE_URL": "https://opencode.ai/zen/go"})["provider_id"], "opencode-go")
 
 
 class AntigravityTests(unittest.TestCase):

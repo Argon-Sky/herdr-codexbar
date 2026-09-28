@@ -10,24 +10,39 @@ import os
 import tomllib
 from numbers import Real
 from pathlib import Path
+from urllib.parse import urlsplit
 
 # Codex's footer excludes this fixed prompt overhead from "Context N% used"; mirror it.
 CODEX_BASELINE_TOKENS = 12_000
 CHUNK = 256 * 1024
+# Anthropic-compatible endpoints Claude Code can point at (host and path) -> provider ID.
+ANTHROPIC_ENDPOINTS = {"api.anthropic.com": "anthropic", "opencode.ai/zen/go": "opencode-go"}
 
 
 def number(value):
     return value if isinstance(value, Real) and not isinstance(value, bool) and value >= 0 else None
 
 
-def claude(payload):
-    """Claude Code `statusLine` JSON."""
+def claude_provider(base_url):
+    """Provider ID for Claude Code's ANTHROPIC_BASE_URL; None for endpoints without CodexBar quota, such as a local proxy."""
+    if not base_url:
+        return "anthropic"
+    parsed = urlsplit(base_url)
+    endpoint = f"{(parsed.hostname or '').lower()}{parsed.path.rstrip('/')}"
+    for prefix, provider in ANTHROPIC_ENDPOINTS.items():
+        if endpoint == prefix or endpoint.startswith(prefix + "/"):
+            return provider
+    return None
+
+
+def claude(payload, env=os.environ):
+    """Claude Code `statusLine` JSON; the provider follows ANTHROPIC_BASE_URL, which Claude Code passes to the status line."""
     context = payload.get("context_window") or {}
     usage = context.get("current_usage") or {}
     parts = [number(usage.get(key)) for key in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")]
     return {
         "harness": "claude",
-        "provider_id": "anthropic",
+        "provider_id": claude_provider(env.get("ANTHROPIC_BASE_URL")),
         "model": (payload.get("model") or {}).get("display_name"),
         "effort": (payload.get("effort") or {}).get("level"),
         "context_used": sum(parts) if None not in parts else None,
