@@ -7,7 +7,7 @@
 </div>
 
 <div align="center">
-  <h3>Subscription quota for your coding agents, right where you run them</h3>
+  <h3>Subscription quota for every agent in your Herdr sidebar</h3>
 </div>
 
 <div align="center">
@@ -19,7 +19,7 @@
 
 <br>
 
-herdr-codexbar puts [CodexBar](https://github.com/steipete/CodexBar)'s usage data into [Herdr](https://github.com/herdrdev/herdr): under each agent in the sidebar, the plan it is billing, its model and context, and how much of each quota window is left. Not affiliated with Herdr, CodexBar or any provider.
+An add-on for [Herdr](https://github.com/herdrdev/herdr) that shows, under each agent in the sidebar, which subscription it is using and how much quota is left. It works with 11 coding agents and 7 subscriptions, and reads the numbers from [CodexBar](https://github.com/steipete/CodexBar), so it never needs your credentials.
 
 <p align="center"><img src="docs/sidebar.png" width="600" alt="Herdr sidebar with six agents: each shows its subscription plan, model, effort and context, and a colored bar per quota window with the percent left, whether usage is in reserve, on pace or in deficit, and the time to reset."></p>
 
@@ -140,3 +140,5 @@ bin/herdr-codexbar check        # runs from the checkout
 python3 -m unittest discover -s tests -t .
 node --test tests/*.test.js tests/*.test.ts
 ```
+
+Not affiliated with Herdr, CodexBar or any provider.
