@@ -29,7 +29,7 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 | Claude Pro | $20 | tied: Claude Code | ✅ 5h, weekly | done |
 | ChatGPT Plus | $20 | portable: sign-in with ChatGPT | ✅ 5h, weekly | done |
 | Google AI Pro | $20 | tied: Antigravity CLI | ✅ per model pool | done |
-| SuperGrok (or X Premium+) | $30 | tied: Grok Build | ✅ weekly | done |
+| SuperGrok (or X Premium+) | $30 | portable: sign-in with xAI | ✅ weekly | done |
 | OpenCode Go | $10 | portable: API key | ✅ 5h, weekly, monthly | done |
 | Command Code GOAT | $10 | portable: API key | ✅ 5h, weekly, monthly | done |
 | GitHub Copilot Pro | $10 | portable: sign-in with GitHub | ✅ monthly premium requests | done |
@@ -62,8 +62,8 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 | Command Code | — (self-reported) | mod | done | — |
 | Copilot CLI | session | status line | done | Copilot shows no reasoning effort |
 | Grok Build | session | status line | done | — |
-| Pi | lifecycle | extension | done | Test ChatGPT, Copilot, Command Code |
-| Kilo CLI | lifecycle | TUI plugin | done | Test Command Code, Kilo Pass once CodexBar tracks it |
+| Pi | lifecycle | extension | done | Test Command Code |
+| Kilo CLI | lifecycle | TUI plugin | done | Test Copilot, Command Code, and Kilo Pass once CodexBar tracks it |
 | Oh My Pi | lifecycle | extension (Pi fork) | next | Reuse the Pi extension |
 | Prime Agent | — | extension (Pi fork) | next | Reuse the Pi extension; self-report the agent |
 | Cline CLI | detected | hooks | next | Test ChatGPT, OpenCode Go, Command Code |
@@ -87,36 +87,38 @@ Tied subscriptions work only in their vendor's own harness. Portable ones give y
 
 ## Portable subscriptions × harnesses
 
-| Harness | ChatGPT | Copilot | OC Go | Cmd Code | ClinePass | Kilo Pass | GLM | Kimi | MiniMax | Qwen Cloud | MiMo |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Claude Code | — | — | ● | ○ | — | — | ● | ● | ● | ● | ● |
-| Codex | ✅ | — | ● | ○ | ? | ? | ? | ? | ? | ? | ? |
-| OpenCode | ● | ● | ✅ | ✅ | ○ | ○ | ● | ● | ○ | ○ | ● |
-| Kilo CLI | ? | ? | ✅ | ○ | ○ | ● | ○ | ○ | ○ | ○ | ● |
-| Pi | ● | ● | ✅ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Oh My Pi | ● | ● | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Prime Agent | ? | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Cline CLI | ● | — | ○ | ○ | ● | ○ | ● | ○ | ○ | ○ | ● |
-| Mastra Code | ● | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Qwen Code | — | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ● | ○ |
-| Droid | ? | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Crush | ● | ● | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| jcode | ● | ● | ● | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Letta Code | ● | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |
-| Maki | ? | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Reasonix | — | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Kimi Code | — | — | ! | ○ | ○ | ○ | ○ | ● | ○ | ○ | ○ |
-| Copilot CLI | — | ✅ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Qoder CLI | — | — | ? | ? | ? | ? | ? | ? | ? | ● | ? |
-| Mistral Vibe | — | — | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| Amp | ● | — | — | — | — | — | — | — | — | — | — |
+| Harness | ChatGPT | Copilot | Grok | OC Go | Cmd Code | ClinePass | Kilo Pass | GLM | Kimi | MiniMax | Qwen Cloud | MiMo |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Claude Code | — | — | — | ● | ○ | — | — | ● | ● | ● | ● | ● |
+| Codex | ✅ | — | ? | ● | ○ | ? | ? | ? | ? | ? | ? | ? |
+| OpenCode | ● | ● | ? | ✅ | ✅ | ○ | ○ | ● | ● | ○ | ○ | ● |
+| Kilo CLI | ✅ | ? | ✅ | ✅ | ○ | ○ | ● | ○ | ○ | ○ | ○ | ● |
+| Pi | ✅ | ✅ | ✅ | ✅ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Oh My Pi | ● | ● | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Prime Agent | ? | ? | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Cline CLI | ● | — | ? | ○ | ○ | ● | ○ | ● | ○ | ○ | ○ | ● |
+| Mastra Code | ● | ? | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Qwen Code | — | — | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ● | ○ |
+| Droid | ? | — | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Crush | ● | ● | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| jcode | ● | ● | ? | ● | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Letta Code | ● | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? | ? |
+| Maki | ? | — | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Reasonix | — | — | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Kimi Code | — | — | ? | ! | ○ | ○ | ○ | ○ | ● | ○ | ○ | ○ |
+| Copilot CLI | — | ✅ | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Qoder CLI | — | — | ? | ? | ? | ? | ? | ? | ? | ? | ● | ? |
+| Mistral Vibe | — | — | ? | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| Amp | ● | — | — | — | — | — | — | — | — | — | — | — |
+| Grok Build | — | — | ✅ | — | — | — | — | — | — | — | — | — |
 
-Antigravity CLI, Command Code, Grok Build, Kiro CLI, Cursor CLI, Devin CLI, Muse Code and Auggie take no portable subscription: every cell would be —.
+Antigravity CLI, Command Code, Kiro CLI, Cursor CLI, Devin CLI, Muse Code and Auggie take no portable subscription: every cell would be —.
 
 Notes:
 
 - Claude Code accepts only Anthropic-compatible endpoints, so OpenAI-only plans (ClinePass, Kilo Pass) are out. Codex accepts only the OpenAI Responses API, which several plans do not document; those cells are `?`.
 - OpenCode Go expects clients to send a session header and lists the ones it has validated (Claude Code, Codex, Pi, jcode, Kilo CLI). Other harnesses may be throttled, and it flags Kimi Code as problematic.
+- SuperGrok works outside Grok Build through the xAI sign-in that Pi and Kilo CLI offer. An xAI API key uses the same provider ID, so it would show the subscription's quota too.
 - Plans restrict use to coding tools; scripts and automations are not allowed on most of them.
 
 ## Tied subscriptions × harnesses
@@ -133,7 +135,6 @@ Notes:
 | Augment Code Standard | Auggie ● | — |
 | Devin Pro | Devin CLI ● | — |
 | Qoder Pro | Qoder CLI ● | — |
-| SuperGrok | Grok Build ✅ | jcode ? (drives the Grok CLI) |
 
 ## Known, not planned
 
