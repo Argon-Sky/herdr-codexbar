@@ -428,7 +428,7 @@ def check():
     herdr = shutil.which("herdr") or os.environ.get("HERDR_BIN_PATH")
     result = run([herdr, "--version"]) if herdr else None
     found = version(result.stdout) if result and result.returncode == 0 else None
-    report(found is not None and found >= MIN_HERDR, f"Herdr {'.'.join(map(str, found)) if found else 'not found'}", "install Herdr 0.9.1 or newer: https://herdr.dev")
+    report(found is not None and found >= MIN_HERDR, f"Herdr {'.'.join(map(str, found)) if found else 'not found'}", "install Herdr 0.9.1 or newer: https://github.com/herdrdev/herdr")
 
     cli = codexbar.executable()
     try:

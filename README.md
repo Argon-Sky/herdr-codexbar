@@ -19,7 +19,7 @@
 
 <br>
 
-herdr-codexbar puts [CodexBar](https://github.com/steipete/CodexBar)'s usage data into [Herdr](https://herdr.dev): under each agent in the sidebar, the plan it is billing, its model and context, and how much of each quota window is left. Not affiliated with Herdr, CodexBar or any provider.
+herdr-codexbar puts [CodexBar](https://github.com/steipete/CodexBar)'s usage data into [Herdr](https://github.com/herdrdev/herdr): under each agent in the sidebar, the plan it is billing, its model and context, and how much of each quota window is left. Not affiliated with Herdr, CodexBar or any provider.
 
 <p align="center"><img src="docs/sidebar.png" width="600" alt="Herdr sidebar with six agents: each shows its subscription plan, model, effort and context, and a colored bar per quota window with the percent left, whether usage is in reserve, on pace or in deficit, and the time to reset."></p>
 
@@ -33,7 +33,7 @@ herdr-codexbar puts [CodexBar](https://github.com/steipete/CodexBar)'s usage dat
 
 ## Coverage
 
-| Harness ╲ Subscription | Claude Pro | ChatGPT Plus | SuperGrok | Google AI Pro | OpenCode Go | Command Code GOAT | Copilot Pro |
+| Subscription →<br>Harness ↓ | Claude Pro | ChatGPT Plus | SuperGrok | Google AI Pro | OpenCode Go | Command Code GOAT | Copilot Pro |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | [Claude Code](https://claude.com/claude-code) | ✅ | ❌ | ❌ | ❌ | ❔ | ❔ | ❌ |
 | [Codex](https://github.com/openai/codex) | ❌ | ✅ | ❔ | ❌ | ❔ | ❔ | ❌ |
@@ -61,7 +61,7 @@ Notes:
 ## Requirements
 
 - macOS 14 or newer.
-- [Herdr](https://herdr.dev) 0.9.1 or newer: `brew install herdr`. Install Herdr's integration for each agent you use, for example `herdr integration install claude`.
+- [Herdr](https://github.com/herdrdev/herdr) 0.9.1 or newer: `brew install herdr`. Install Herdr's integration for each agent you use, for example `herdr integration install claude`.
 - [CodexBar](https://github.com/steipete/CodexBar): `brew install --cask codexbar`. Open it once, sign in to your providers and turn on the ones you want in its settings. The CodexBar CLI (Preferences → Advanced → Install CLI) is optional: herdr-codexbar falls back to the CLI inside the app.
 - [Fira Code](https://github.com/tonsky/FiraCode) 6 or newer as your terminal font, for the progress bars: `brew install --cask font-fira-code`. Any [Nerd Font](https://www.nerdfonts.com) 3 or newer works too.
 - One or more of the agents under [Coverage](#coverage).
@@ -125,13 +125,13 @@ Other providers, such as OpenCode Zen, have no quota in CodexBar, so the pane sh
 
 ## Roadmap
 
-Ideas, not promises. Upvote or comment on the [roadmap issues](https://github.com/Argon-Sky/herdr-codexbar/issues?q=is%3Aissue+label%3Aroadmap) to move them up.
+Ideas we are considering. If one of them would be useful to you, or you have another, [open an issue](https://github.com/Argon-Sky/herdr-codexbar/issues).
 
 - Linux, once CodexBar's CLI runs there.
 - More agents, next up Cline CLI, Mastra Code and Droid.
 - Session tokens and API-equivalent cost.
 - Quota for API and credit billing.
-- A compact layout for narrow sidebars, if people ask for it.
+- A compact layout for narrow sidebars.
 
 ## Development
 
