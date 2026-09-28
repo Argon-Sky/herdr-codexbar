@@ -52,24 +52,26 @@ Higher tiers (Claude Max, ChatGPT Pro, SuperGrok Heavy and similar) are the same
 
 Gemini CLI is not covered: since June 18, 2026, Google AI Pro and Ultra users are moved to Antigravity CLI.
 
-## Portable subscriptions × harnesses
+## Subscriptions × harnesses
 
-| Harness | ChatGPT | xAI | OpenCode Go | Command Code | Copilot |
-| --- | --- | --- | --- | --- | --- |
-| Claude Code | — | — | ◐ | ○ | — |
-| Codex | ✅ | ? | ◐ | ○ | — |
-| Grok Build | — | ✅ | — | — | — |
-| Antigravity CLI | — | — | — | — | — |
-| OpenCode | ✅ | ✅ | ✅ | ✅ | ● |
-| Command Code | — | — | — | ✅ | — |
-| GitHub Copilot CLI | — | ? | ○ | ○ | ✅ |
-| Pi | ✅ | ✅ | ✅ | ○ | ✅ |
-| Oh My Pi | ✅ | ✅ | ✅ | ○ | ✅ |
-| Prime Agent | ✅ | ✅ | ✅ | ○ | ✅ |
-| Kilo CLI | ✅ | ✅ | ✅ | ○ | ? |
+| Harness ╲ Subscription | Claude Pro | ChatGPT Plus | X Premium+ | Google AI Pro | OpenCode Go | Command Code GOAT | Copilot Pro |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Claude Code | ✅ | — | — | — | ◐ | ○ | — |
+| Codex | — | ✅ | ? | — | ◐ | ○ | — |
+| Grok Build | — | — | ✅ | — | — | — | — |
+| Antigravity CLI | — | — | — | ✅ | — | — | — |
+| OpenCode | ⚠ | ✅ | ✅ | ⚠ | ✅ | ✅ | ● |
+| Command Code | — | — | — | — | — | ✅ | — |
+| GitHub Copilot CLI | — | — | ? | — | ○ | ○ | ✅ |
+| Pi | ⚠ | ✅ | ✅ | ⚠ | ✅ | ○ | ✅ |
+| Oh My Pi | ⚠ | ✅ | ✅ | ⚠ | ✅ | ○ | ✅ |
+| Prime Agent | ⚠ | ✅ | ✅ | ⚠ | ✅ | ○ | ✅ |
+| Kilo CLI | ⚠ | ✅ | ✅ | ⚠ | ✅ | ○ | ? |
 
 Notes:
 
+- Claude Pro is tied to Claude Code: Anthropic allows the subscription only in its own apps. Harnesses that run the unmodified `claude` binary are fine; ones that sign in with a Claude account are not.
+- Google AI Pro is tied to Antigravity CLI: Google suspends accounts that use Antigravity through third-party tools.
 - Claude Code accepts only Anthropic-compatible endpoints, and Codex only the OpenAI Responses API.
 - OpenCode Go serves each model family on one API only. Claude Code reaches the ones on its Anthropic endpoint (MiniMax and Qwen); Codex reaches the ones on its Responses endpoint (GPT Luna, Grok and Muse Spark). The rest (GLM, Kimi, DeepSeek and others) need a harness that speaks Chat Completions, such as OpenCode, Kilo CLI or the Pi family.
 - Translating proxies such as Codex Router or LiteLLM, which put other APIs behind Claude Code or Codex, are not supported: the harness then reports the proxy, not the plan.
@@ -77,13 +79,6 @@ Notes:
 - X Premium+ and SuperGrok work outside Grok Build through the xAI sign-in that OpenCode, Kilo CLI and the Pi family offer. An xAI API key uses the same provider ID, so it would show the subscription's quota too.
 - In OpenCode, Kilo CLI and the Pi family, a custom provider shows a subscription's quota when you name it after the CodexBar provider, for example `commandcode` for Command Code's OpenAI-compatible API.
 - Plans restrict use to coding tools; scripts and automations are not allowed on most of them.
-
-## Tied subscriptions × harnesses
-
-| Subscription | Works in | Elsewhere |
-| --- | --- | --- |
-| Claude Pro | Claude Code ✅ | ⚠ Anthropic allows the subscription only in its own apps. Harnesses that run the unmodified `claude` binary are fine; ones that sign in with a Claude account are not. |
-| Google AI Pro | Antigravity CLI ✅ | ⚠ Google suspends accounts that use Antigravity through third-party tools. |
 
 ## Sources
 
