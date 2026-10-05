@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import tempfile
@@ -14,11 +15,12 @@ BIN = "/opt/homebrew/bin/herdr-codexbar"
 class InstallTests(unittest.TestCase):
     def setUp(self):
         self.home = Path(tempfile.mkdtemp())
-        for directory in (".claude", ".codex", ".gemini/antigravity-cli", ".config/opencode", ".commandcode", ".copilot", ".grok", ".pi/agent", ".config/kilo", ".omp/agent", ".prime/agent"):
+        for directory in (".claude", ".codex", ".gemini/antigravity-cli", ".config/opencode", ".commandcode", ".copilot", ".grok", ".pi/agent", ".config/kilo", ".omp/agent", ".prime/agent", ".qwen"):
             (self.home / directory).mkdir(parents=True)
         (self.home / ".codex/hooks.json").write_text(json.dumps({"hooks": {"Stop": [{"hooks": [{"type": "command", "command": "notify"}]}]}}))
         (self.home / ".config/opencode/cli.json").write_text(json.dumps({"plugins": ["./herdr-opencode"]}))
         (self.home / ".copilot/settings.json").write_text(json.dumps({"theme": "github"}))
+        (self.home / ".qwen/settings.json").write_text(json.dumps({"ui": {"autoModeAcknowledged": True}, "env": {"QWEN_KEY": "sk-secret"}}, indent=2))
         (self.home / ".grok/config.toml").write_text('[ui]\ntheme = "dark"\n\n[[marketplace.sources]]\nname = "x"\n')
         patches = [
             mock.patch.dict(os.environ, {"HOME": str(self.home), "HERDR_CODEXBAR_BIN": BIN}),
@@ -40,6 +42,9 @@ class InstallTests(unittest.TestCase):
         grok = tomllib.loads((self.home / ".grok/config.toml").read_text())
         self.assertEqual(grok["ui"], {"theme": "dark", "status_line": {"type": "command", "command": f"{BIN} hook grok"}})
         self.assertEqual(grok["marketplace"]["sources"], [{"name": "x"}])
+        qwen = self.read(".qwen/settings.json")
+        self.assertEqual(qwen["ui"], {"autoModeAcknowledged": True, "statusLine": {"type": "command", "command": f"{BIN} hook qwen"}})
+        self.assertEqual(qwen["env"], {"QWEN_KEY": "sk-secret"})
         hooks = self.read(".codex/hooks.json")["hooks"]
         self.assertEqual(sorted(hooks), ["PostCompact", "PostToolUse", "SessionStart", "Stop"])
         self.assertEqual(hooks["Stop"][0]["hooks"][0]["command"], "notify")
@@ -73,6 +78,19 @@ class InstallTests(unittest.TestCase):
         install.setup(force=True)
         settings = self.read(".claude/settings.json")
         self.assertEqual((settings["statusLine"]["command"], settings["theme"]), (f"{BIN} hook claude", "dark"))
+
+    def test_qwen_preset_status_line_needs_force(self):
+        (self.home / ".qwen/settings.json").write_text(json.dumps({"ui": {"statusLine": {"type": "preset", "items": ["git-branch"]}}}))
+        with self.assertRaises(install.Conflict):
+            install.plan(self.home, BIN)
+        install.setup(force=True)
+        self.assertEqual(self.read(".qwen/settings.json")["ui"]["statusLine"]["command"], f"{BIN} hook qwen")
+
+    def test_diff_hides_env_values(self):
+        with mock.patch("sys.stdout", new_callable=io.StringIO) as output:
+            install.setup(dry_run=True)
+        self.assertIn('"QWEN_KEY": "…"', output.getvalue())
+        self.assertNotIn("sk-secret", output.getvalue())
 
     def test_dry_run_writes_nothing(self):
         install.setup(dry_run=True)

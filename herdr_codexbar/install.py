@@ -10,6 +10,7 @@ import copy
 import difflib
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -96,6 +97,7 @@ HARNESSES = {
     "omp": (".omp/agent", "opencodego", "omp"),
     "prime": (".prime/agent", "opencodego", None),
     "kilo": (".config/kilo", "opencodego", "kilo"),
+    "qwen": (".qwen", "qwencloud", "qwen"),
 }
 
 
@@ -171,6 +173,24 @@ def grok_status_line(path, line, force, remove=False):
             raise Conflict(f"{path} already has a status line ({current['command']}); rerun with --force to replace it")
         new = tomledit.set_table(old, "ui.status_line", {"type": '"command"', "command": tomledit.toml_string(line)})
     return [(path, old or None, new or None)] if new != old else []
+
+
+def qwen_status_line(path, line, force, remove=False):
+    """Qwen Code's status line lives under `ui` in its settings."""
+    def mutate(settings):
+        ui = settings.setdefault("ui", {})
+        current = ui.get("statusLine") or {}
+        ours = MARKER in str(current.get("command", ""))
+        if remove:
+            if ours:
+                del ui["statusLine"]
+        elif current and not ours and not force:
+            raise Conflict(f"{path} already has a ui.statusLine ({current.get('command') or current.get('type')}); rerun with --force to replace it")
+        else:
+            ui["statusLine"] = {"type": "command", "command": line}
+        if not ui:
+            settings.pop("ui")
+    return json_change(path, mutate)
 
 
 def codex_hooks(path, line, remove=False):
@@ -274,6 +294,8 @@ def plan(home, bin_path, force=False, remove=False):
         changes += codex_hooks(home / ".codex/hooks.json", f"{line} hook codex", remove)
     if "copilot" in harnesses:
         changes += status_line(home / ".copilot/settings.json", f"{line} hook copilot", force, remove)
+    if "qwen" in harnesses:
+        changes += qwen_status_line(home / ".qwen/settings.json", f"{line} hook qwen", force, remove)
     if "grok" in harnesses:
         changes += grok_status_line(home / ".grok/config.toml", f"{line} hook grok", force, remove)
     if "opencode" in harnesses:
@@ -297,6 +319,17 @@ def read_undo():
         return {}
 
 
+def hide_env(text):
+    """Mask the values in a settings file's `env` block, which can hold API keys, so a diff never prints them."""
+    try:
+        env = json.loads(text).get("env")
+    except (ValueError, AttributeError):
+        return text
+    for key in env if isinstance(env, dict) else ():
+        text = re.sub(rf'({re.escape(json.dumps(key))}\s*:\s*)"(?:[^"\\]|\\.)*"', r'\1"…"', text)
+    return text
+
+
 def show(changes, home):
     for path, old, new in changes:
         name = f"~/{path.relative_to(home)}" if path.is_relative_to(home) else str(path)
@@ -304,6 +337,7 @@ def show(changes, home):
         print(f"{verb} {name}")
         if path.suffix in (".js", ".ts"):
             continue  # Our own plugin files; the diff would only repeat their source.
+        old, new = (hide_env(text) if text and path.suffix == ".json" else text for text in (old, new))
         diff = difflib.unified_diff((old or "").splitlines(True), (new or "").splitlines(True), f"{name} (now)", f"{name} (after)")
         sys.stdout.writelines(f"    {line}" if line.endswith("\n") else f"    {line}\n" for line in diff)
 

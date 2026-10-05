@@ -1,3 +1,4 @@
+import hashlib
 import json
 import tempfile
 import unittest
@@ -11,6 +12,22 @@ def codex_home(effort="medium"):
     (home / ".codex").mkdir()
     (home / ".codex/config.toml").write_text(f'model_reasoning_effort = "{effort}"\n')
     return home
+
+
+TOKEN_PLAN = "https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
+
+
+def qwen_home(base_url=TOKEN_PLAN):
+    home = Path(tempfile.mkdtemp())
+    (home / ".qwen").mkdir()
+    providers = {"openai": [{"id": "qwen3.8-flash", "name": "[Token Plan] qwen3.8-flash", "baseUrl": base_url}, {"id": "glm-5.3", "baseUrl": "http://localhost:4000/v1"}]}
+    (home / ".qwen/settings.json").write_text(json.dumps({"env": {"KEY": "secret"}, "modelProviders": providers}))
+    return home
+
+
+def qwen_env(model="qwen3.8-flash", base_url=TOKEN_PLAN, auth_type="openai"):
+    digest = hashlib.sha256(f"{auth_type}\0{base_url}".encode()).hexdigest()[:8]
+    return {"QWEN_CODE_MODEL": model, "QWEN_CODE_MODEL_IDENTITY": f"{model}@{digest}"}
 
 
 def transcript(records):
@@ -74,6 +91,26 @@ class ClaudeTests(unittest.TestCase):
         self.assertIsNone(harnesses.claude_provider("https://opencode.ai/zen"))
         self.assertIsNone(harnesses.claude_provider("http://localhost:4000"))
         self.assertEqual(harnesses.claude({}, {"ANTHROPIC_BASE_URL": "https://opencode.ai/zen/go"})["provider_id"], "opencode-go")
+
+
+class QwenTests(unittest.TestCase):
+    PAYLOAD = {"model": {"display_name": "[Token Plan] qwen3.8-flash"},
+               "context_window": {"context_window_size": 1_000_000, "used_percentage": 2.3, "current_usage": 23_000, "total_input_tokens": 90_000}}
+
+    def test_token_plan_endpoint_is_qwen_cloud(self):
+        report = harnesses.qwen(self.PAYLOAD, qwen_env(), qwen_home())
+        self.assertEqual(report, {"harness": "qwen", "provider_id": "qwencloud", "model": "qwen3.8-flash", "effort": None,
+                                  "context_used": 23_000, "context_limit": 1_000_000, "context_percent": 2.3})
+
+    def test_other_endpoints_have_no_provider(self):
+        self.assertIsNone(harnesses.qwen(self.PAYLOAD, qwen_env("glm-5.3", "http://localhost:4000/v1"), qwen_home())["provider_id"])
+        self.assertIsNone(harnesses.qwen(self.PAYLOAD, qwen_env(auth_type="anthropic"), qwen_home())["provider_id"])
+        self.assertIsNone(harnesses.qwen(self.PAYLOAD, {}, qwen_home())["provider_id"])
+        self.assertIsNone(harnesses.qwen(self.PAYLOAD, qwen_env(), Path(tempfile.mkdtemp()))["provider_id"])
+
+    def test_unknown_window_has_no_percent(self):
+        report = harnesses.qwen({"context_window": {"context_window_size": 0, "used_percentage": 0, "current_usage": 5_000}}, qwen_env(), qwen_home())
+        self.assertEqual((report["context_used"], report["context_limit"], report["context_percent"]), (5_000, None, None))
 
 
 class AntigravityTests(unittest.TestCase):

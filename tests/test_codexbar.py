@@ -20,6 +20,7 @@ class NormalizeTests(unittest.TestCase):
             "commandcode": "Command Code GOAT",
             "copilot": "Copilot Individual",
             "grok": "X Premium+",
+            "qwencloud": "Qwen Cloud Essential",
         })
 
     def test_windows_are_labelled_and_sorted(self):
@@ -32,6 +33,10 @@ class NormalizeTests(unittest.TestCase):
         self.assertEqual((month["label"], month["pace"]), ("30d", -9.0))
         (week,) = self.providers["grok"]["pools"][""]
         self.assertEqual(week["label"], "7d")
+
+    def test_qwen_cloud_month_without_pace(self):
+        (month,) = self.providers["qwencloud"]["pools"][""]
+        self.assertEqual((month["label"], month["used"], month["pace"]), ("30d", 0.4, None))
 
     def test_pace_uses_codexbar_sign_and_on_pace(self):
         claude = self.providers["claude"]["pools"][""]

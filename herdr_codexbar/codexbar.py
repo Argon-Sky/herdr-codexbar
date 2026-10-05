@@ -19,7 +19,7 @@ SNAPSHOT = STATE_DIR / "usage.json"
 STALE_SECONDS = 600
 SLOTS = ("primary", "secondary", "tertiary")
 # Providers with a supported agent; CodexBar may have others enabled.
-SUPPORTED = ("claude", "codex", "antigravity", "opencodego", "commandcode", "copilot", "grok")
+SUPPORTED = ("claude", "codex", "antigravity", "opencodego", "commandcode", "copilot", "grok", "qwencloud")
 # Window length for providers whose CodexBar windows have none: Copilot premium requests reset monthly.
 DEFAULT_MINUTES = {"copilot": 30 * 1440}
 # Antigravity bills Gemini and third-party (Claude, GPT) models from separate
@@ -89,7 +89,7 @@ def window(data, pace=None, known=True, default_minutes=None):
 
 
 def plan_name(provider, login_method, display_name):
-    """`Claude Pro`, `Google AI Pro`, `ChatGPT Plus`, `Command Code GOAT`, `OpenCode Go`."""
+    """`Claude Pro`, `Google AI Pro`, `ChatGPT Plus`, `Command Code GOAT`, `OpenCode Go`, `Qwen Cloud Essential`."""
     display = display_name or provider
     base = str(login_method or "").split("·")[0].strip()
     if not base:

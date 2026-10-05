@@ -23,6 +23,9 @@ class RouteTests(unittest.TestCase):
         self.assertEqual(panes.route(report(harness="pi", provider_id="openai-codex")), ("codex", None))
         self.assertEqual(panes.route(report(harness="kilo", provider_id="xai")), ("grok", None))
         self.assertEqual(panes.route(report(harness="omp", provider_id="xai-oauth")), ("grok", None))
+        self.assertEqual(panes.route(report(harness="qwen", provider_id="qwencloud")), ("qwencloud", None))
+        self.assertEqual(panes.route(report(harness="pi", provider_id="qwen-token-plan")), ("qwencloud", None))
+        self.assertEqual(panes.route(report(harness="opencode", provider_id="alibaba-token-plan")), ("qwencloud", None))
         self.assertEqual(panes.route(report(harness="opencode", provider_id="opencode")), (None, None))
 
     def test_antigravity_pool_follows_the_model(self):
