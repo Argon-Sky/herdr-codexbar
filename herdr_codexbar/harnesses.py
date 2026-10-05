@@ -5,6 +5,7 @@ context figures `context_used`, `context_limit` and `context_percent`. Values
 come only from the harness itself, never from quota data.
 """
 
+import hashlib
 import json
 import os
 import tomllib
@@ -17,22 +18,27 @@ CODEX_BASELINE_TOKENS = 12_000
 CHUNK = 256 * 1024
 # Anthropic-compatible endpoints Claude Code can point at (host and path) -> provider ID.
 ANTHROPIC_ENDPOINTS = {"api.anthropic.com": "anthropic", "opencode.ai/zen/go": "opencode-go"}
+# OpenAI-compatible endpoints Qwen Code can point at (host and path) -> provider ID.
+QWEN_ENDPOINTS = {"token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1": "qwencloud"}
 
 
 def number(value):
     return value if isinstance(value, Real) and not isinstance(value, bool) and value >= 0 else None
 
 
-def claude_provider(base_url):
-    """Provider ID for Claude Code's ANTHROPIC_BASE_URL; None for endpoints without CodexBar quota, such as a local proxy."""
-    if not base_url:
-        return "anthropic"
+def endpoint_provider(base_url, endpoints):
+    """Provider ID for a base URL; None for endpoints without CodexBar quota, such as a local proxy."""
     parsed = urlsplit(base_url)
     endpoint = f"{(parsed.hostname or '').lower()}{parsed.path.rstrip('/')}"
-    for prefix, provider in ANTHROPIC_ENDPOINTS.items():
+    for prefix, provider in endpoints.items():
         if endpoint == prefix or endpoint.startswith(prefix + "/"):
             return provider
     return None
+
+
+def claude_provider(base_url):
+    """Provider ID for Claude Code's ANTHROPIC_BASE_URL."""
+    return endpoint_provider(base_url, ANTHROPIC_ENDPOINTS) if base_url else "anthropic"
 
 
 def claude(payload, env=os.environ):
@@ -166,4 +172,36 @@ def codex(payload, home=None):
     }
 
 
-PARSERS = {"claude": claude, "antigravity": antigravity, "codex": codex, "grok": grok, "copilot": copilot}
+def qwen_base_url(identity, home):
+    """The base URL behind QWEN_CODE_MODEL_IDENTITY, `<model>@<sha256 of auth type, NUL, base URL>` cut to 8 hex digits, from the providers in Qwen's settings."""
+    model, _, digest = (identity or "").rpartition("@")
+    try:
+        providers = json.loads((home / ".qwen/settings.json").read_text()).get("modelProviders") or {}
+        for auth_type, entries in providers.items():
+            for entry in entries:
+                base_url = entry.get("baseUrl")
+                if entry.get("id") == model and isinstance(base_url, str) and hashlib.sha256(f"{auth_type}\0{base_url}".encode()).hexdigest()[:8] == digest:
+                    return base_url
+    except (OSError, ValueError, AttributeError, TypeError):
+        pass
+    return None
+
+
+def qwen(payload, env=os.environ, home=None):
+    """Qwen Code `ui.statusLine` JSON; the model and its endpoint come from the environment Qwen Code passes to the status line."""
+    context = payload.get("context_window") or {}
+    base_url = qwen_base_url(env.get("QWEN_CODE_MODEL_IDENTITY"), home or Path.home())
+    size = number(context.get("context_window_size"))
+    return {
+        "harness": "qwen",
+        "provider_id": endpoint_provider(base_url, QWEN_ENDPOINTS) if base_url else None,
+        "model": env.get("QWEN_CODE_MODEL"),
+        "effort": None,
+        "context_used": number(context.get("current_usage")),
+        "context_limit": size or None,
+        # Qwen Code reports 0% when it does not know the window.
+        "context_percent": number(context.get("used_percentage")) if size else None,
+    }
+
+
+PARSERS = {"claude": claude, "antigravity": antigravity, "codex": codex, "grok": grok, "copilot": copilot, "qwen": qwen}

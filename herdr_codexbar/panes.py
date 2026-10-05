@@ -17,7 +17,7 @@ from pathlib import Path
 from . import STATE_DIR, codexbar, render
 
 # Harness -> Herdr agent ID shown by `herdr pane list`.
-HARNESSES = {"claude": "claude", "codex": "codex", "antigravity": "agy", "opencode": "opencode", "commandcode": "cmd", "copilot": "copilot", "grok": "grok", "pi": "pi", "kilo": "kilo", "omp": "omp", "prime": "prime-agent"}
+HARNESSES = {"claude": "claude", "codex": "codex", "antigravity": "agy", "opencode": "opencode", "commandcode": "cmd", "copilot": "copilot", "grok": "grok", "pi": "pi", "kilo": "kilo", "omp": "omp", "prime": "prime-agent", "qwen": "qwen"}
 # Harnesses Herdr does not detect: their plugin reports the agent ID itself.
 SELF_REPORTED = {"prime": "prime-agent"}
 # Herdr names Command Code panes `cmd · <model>`; the model has its own row, so show the bare agent ID.
@@ -40,6 +40,9 @@ PROVIDERS = {
     "grok": "grok",
     "xai": "grok",  # Pi and Kilo's xAI sign-in; an xAI API key shows the same quota
     "xai-oauth": "grok",  # Oh My Pi's xAI sign-in
+    "qwencloud": "qwencloud",
+    "qwen-token-plan": "qwencloud",  # Pi's Qwen Cloud Token Plan sign-in
+    "alibaba-token-plan": "qwencloud",  # The same plan and endpoint in OpenCode, Kilo and Oh My Pi
 }
 POOL_NAMES = {"gemini": "Gemini", "claude-gpt": "Claude & GPT"}
 PACE_STATES = ("reserve", "pace", "deficit")

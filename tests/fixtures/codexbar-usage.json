@@ -83,6 +83,15 @@
     }
   },
   {
+    "provider": "qwencloud",
+    "usage": {
+      "primary": { "windowMinutes": 43200, "resetsAt": "2026-02-01T16:00:00Z", "resetDescription": "102.08 / 25,500 credits used", "usedPercent": 0.4 },
+      "secondary": null,
+      "tertiary": null,
+      "loginMethod": "essential"
+    }
+  },
+  {
     "provider": "unsupported-example",
     "usage": { "primary": { "usedPercent": 16, "resetsAt": "2026-01-19T00:00:00Z" }, "loginMethod": "Individual" }
   },

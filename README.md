@@ -21,7 +21,7 @@
 
 <div align="justify">
 
-An add-on for [Herdr](https://github.com/herdrdev/herdr) that shows, under each agent in the sidebar, which subscription it is using and how much quota is left. It works with 11 coding agents and 7 subscriptions, and reads the numbers from [CodexBar](https://github.com/steipete/CodexBar), so it never needs your credentials.
+An add-on for [Herdr](https://github.com/herdrdev/herdr) that shows, under each agent in the sidebar, which subscription it is using and how much quota is left. It works with 12 coding agents and 8 subscriptions, and reads the numbers from [CodexBar](https://github.com/steipete/CodexBar), so it never needs your credentials.
 
 <p align="center"><img src="assets/sidebar.png" width="600" alt="Herdr sidebar with six agents: each shows its subscription plan, model, effort and context, and a colored bar per quota window with the percent left, whether usage is in reserve, on pace or in deficit, and the time to reset."></p>
 
@@ -35,19 +35,20 @@ An add-on for [Herdr](https://github.com/herdrdev/herdr) that shows, under each 
 
 ## Coverage
 
-| Subscription →<br>Harness ↓ | Claude Pro | ChatGPT Plus | SuperGrok | Google AI Pro | OpenCode Go | Command Code GOAT | Copilot Pro |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| [Claude Code](https://claude.com/claude-code) | ✅ | ❌ | ❌ | ❌ | ❔ | ❔ | ❌ |
-| [Codex](https://github.com/openai/codex) | ❌ | ✅ | ❔ | ❌ | ❔ | ❔ | ❌ |
-| [Grok Build](https://x.ai/cli) | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| [Antigravity CLI](https://antigravity.google) | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| [OpenCode](https://opencode.ai) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ❔ |
-| [Command Code](https://commandcode.ai) | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| [GitHub Copilot CLI](https://github.com/features/copilot/cli) | ❌ | ❌ | ❔ | ❌ | ❔ | ❔ | ✅ |
-| [Pi](https://github.com/earendil-works/pi) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ❔ | ✅ |
-| [Oh My Pi](https://github.com/can1357/oh-my-pi) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ❔ | ✅ |
-| [Prime Agent](https://github.com/PrimeIntellect-ai/prime-agent) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ❔ | ✅ |
-| [Kilo CLI](https://github.com/Kilo-Org/kilocode) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ❔ | ❔ |
+| Subscription →<br>Harness ↓ | Claude Pro | ChatGPT Plus | SuperGrok | Google AI Pro | OpenCode Go | Command Code GOAT | Copilot Pro | Qwen Cloud Token Plan |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [Claude Code](https://claude.com/claude-code) | ✅ | ❌ | ❌ | ❌ | ❔ | ❔ | ❌ | ❔ |
+| [Codex](https://github.com/openai/codex) | ❌ | ✅ | ❔ | ❌ | ❔ | ❔ | ❌ | ❔ |
+| [Grok Build](https://x.ai/cli) | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [Antigravity CLI](https://antigravity.google) | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| [OpenCode](https://opencode.ai) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ✅ | ❔ | ✅ |
+| [Command Code](https://commandcode.ai) | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| [GitHub Copilot CLI](https://github.com/features/copilot/cli) | ❌ | ❌ | ❔ | ❌ | ❔ | ❔ | ✅ | ❌ |
+| [Pi](https://github.com/earendil-works/pi) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ❔ | ✅ | ✅ |
+| [Oh My Pi](https://github.com/can1357/oh-my-pi) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ❔ | ✅ | ✅ |
+| [Prime Agent](https://github.com/PrimeIntellect-ai/prime-agent) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ❔ | ✅ | ❔ |
+| [Kilo CLI](https://github.com/Kilo-Org/kilocode) | ⚠️ | ✅ | ✅ | ⚠️ | ✅ | ❔ | ❔ | ✅ |
+| [Qwen Code](https://github.com/QwenLM/qwen-code) | ❌ | ❌ | ❌ | ❌ | ❔ | ❔ | ❌ | ✅ |
 
 - ✅ Integrated in herdr-codexbar and tested
 - ❔ Not verified
@@ -59,6 +60,7 @@ Notes:
 - Codex needs `hooks = true` under `[features]` in `~/.codex/config.toml`, and must be started with `--no-daemon`. Its quota appears after the first message.
 - Claude Code and Codex reach only some OpenCode Go models: MiniMax and Qwen in Claude Code, GPT Luna, Grok and Muse Spark in Codex. Translating proxies such as LiteLLM are not supported.
 - X Premium+ works like SuperGrok, and higher tiers (Claude Max, ChatGPT Pro and similar) like the plans above.
+- Qwen Cloud Token Plan is the [Qwen Cloud plan](https://www.qwencloud.com/pricing/token-plan), not Alibaba Cloud Model Studio's [Coding Plan](https://www.alibabacloud.com/help/en/model-studio/coding-plan). CodexBar calls its provider Qwen Cloud. Sign in with `/connect` → Alibaba Token Plan in OpenCode and Kilo CLI, `/login` → Qwen Token Plan in Pi, and `/login` → QwenCloud Token Plan in Oh My Pi.
 
 ## Requirements
 
@@ -103,6 +105,7 @@ Run `herdr-codexbar check` first. It shows what is missing and how to fix it. Th
 - **Bars show as boxes or question marks:** your terminal font is not Fira Code 6+ or a Nerd Font 3+.
 - **Rows are cut off:** the sidebar needs 65 columns. `setup` sets it to 70 when you have not set it, and `check` warns when your own width is narrower.
 - **Only one Codex pane shows rows:** Codex 0.158 and later run every session in one shared background server by default, and its hooks report as the pane that started it. Start Codex with `--no-daemon`, for example `alias codex="codex --no-daemon"`, and stop the running server with `codex app-server daemon stop`. `check` warns while it runs.
+- **Qwen Code has no entry in the sidebar:** Herdr finds Qwen Code by its `qwen` command, which the standalone installer (`~/.local/lib/qwen-code`) starts as `node …/cli-entry.js` instead. Install Qwen Code with npm, `npm i -g @qwen-code/qwen-code`, and remove the standalone one.
 - **An agent shows no rows:** your `[ui.sidebar.agents.rows_by_agent]` has its own layout for that agent, which Herdr uses instead of ours. `check` tells you which.
 
 Still stuck? [Open an issue](https://github.com/Argon-Sky/herdr-codexbar/issues) with the output of `herdr-codexbar check`.
@@ -120,8 +123,9 @@ Each agent reports the provider ID it is using. herdr-codexbar maps that ID to a
 | `commandcode` | Command Code |
 | `github-copilot` | Copilot, monthly premium requests |
 | `grok`, `xai`, `xai-oauth` | Grok |
+| `qwencloud`, `qwen-token-plan`, `alibaba-token-plan` | Qwen Cloud |
 
-Claude Code has no provider setting, so its provider follows `ANTHROPIC_BASE_URL`: unset or `https://api.anthropic.com` is `anthropic`, and `https://opencode.ai/zen/go` is `opencode-go`. Any other endpoint, such as a local proxy, shows model and context only. Codex reports the `model_provider` from its config, so name a custom one `opencode-go` to see OpenCode Go quota.
+Claude Code has no provider setting, so its provider follows `ANTHROPIC_BASE_URL`: unset or `https://api.anthropic.com` is `anthropic`, and `https://opencode.ai/zen/go` is `opencode-go`. Any other endpoint, such as a local proxy, shows model and context only. Qwen Code's provider follows the base URL of the model in use: `https://token-plan.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1` is `qwencloud`, and other endpoints show model and context only. Codex reports the `model_provider` from its config, so name a custom one `opencode-go` to see OpenCode Go quota.
 
 Other providers, such as OpenCode Zen, have no quota in CodexBar, so the pane shows its model and context only. In OpenCode, Kilo CLI and the Pi family, a custom provider shows a subscription's quota when you name it after the CodexBar provider, for example `commandcode` for a Command Code plan used through its OpenAI-compatible API.
 
