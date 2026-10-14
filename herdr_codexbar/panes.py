@@ -195,6 +195,9 @@ def refresh_panes(snapshot, runner=subprocess.run, now=None):
             if entry.get("harness") not in HARNESSES or not PANE_ID.fullmatch(entry.get("pane", "")) or not entry.get("socket"):
                 path.unlink(missing_ok=True)
                 continue
+            if not Path(entry["socket"]).parent.is_dir():
+                path.unlink(missing_ok=True)  # Its Herdr session was deleted, so its panes never come back.
+                continue
             if entry["socket"] not in servers:
                 servers[entry["socket"]] = live_agents(entry, runner)
             agents = servers[entry["socket"]]
