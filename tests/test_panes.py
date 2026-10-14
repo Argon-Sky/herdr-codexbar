@@ -112,6 +112,13 @@ class ReportTests(unittest.TestCase):
         self.assertNotIn("--token", published["w1:p2"])
         self.assertEqual([path.name for path in panes.PANES_DIR.glob("*.json")], ["w1_p1.json"])
 
+    def test_refresh_forgets_panes_of_deleted_sessions(self):
+        panes.report(report(), {**ENV, "HERDR_SOCKET_PATH": "/nonexistent/sessions/gone/herdr.sock"}, Runner(), NOW)
+        runner = Runner()
+        self.assertEqual(panes.refresh_panes(snapshot(), runner, NOW), 0)
+        self.assertEqual(runner.calls, [])
+        self.assertFalse(panes.registration_path("w1:p2").exists())
+
     def test_clear_on_exit_only_for_the_registered_harness(self):
         panes.report(report(harness="omp", provider_id="xai-oauth"), ENV, Runner(), NOW)
         runner = Runner()
