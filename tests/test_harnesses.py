@@ -1,8 +1,10 @@
 import hashlib
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from herdr_codexbar import harnesses
 
@@ -122,6 +124,20 @@ class AntigravityTests(unittest.TestCase):
 
 
 class CodexTests(unittest.TestCase):
+    def setUp(self):
+        patch = mock.patch.dict(os.environ)
+        patch.start()
+        self.addCleanup(patch.stop)
+        os.environ.pop("CODEX_HOME", None)
+
+    def test_effort_uses_the_active_codex_home(self):
+        home = codex_home(effort="low")
+        directory = home / "isolated codex"
+        directory.mkdir()
+        (directory / "config.toml").write_text('model_reasoning_effort = "high"\n')
+        with mock.patch.dict(os.environ, CODEX_HOME=str(directory)):
+            self.assertEqual(harnesses.codex({}, home)["effort"], "high")
+
     def test_transcript_with_baseline(self):
         path = transcript([SESSION, TURN, USAGE, EMPTY_USAGE])
         report = harnesses.codex({"transcript_path": path}, codex_home())

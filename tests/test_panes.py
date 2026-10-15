@@ -101,6 +101,21 @@ class ReportTests(unittest.TestCase):
         panes.report(report(), {**ENV, "HERDR_PANE_ID": "../../etc"}, runner, NOW)
         self.assertEqual(runner.calls, [])
 
+    def test_session_report_rejects_stale_daemon_pane_context(self):
+        runner = Runner({ENV["HERDR_PANE_ID"]: "codex"})
+        runner.sessions[ENV["HERDR_PANE_ID"]] = "different-thread"
+        panes.report(report(harness="codex", provider_id="openai", session="my-thread"), ENV, runner, NOW)
+        self.assertFalse(panes.registration_path(ENV["HERDR_PANE_ID"]).exists())
+        self.assertFalse(any(call[1:3] == ["pane", "report-metadata"] for call in runner.calls))
+
+    def test_refresh_clears_registration_after_codex_switches_threads(self):
+        runner = Runner({ENV["HERDR_PANE_ID"]: "codex"})
+        runner.sessions[ENV["HERDR_PANE_ID"]] = "my-thread"
+        panes.report(report(harness="codex", provider_id="openai", session="my-thread"), ENV, runner, NOW)
+        runner.sessions[ENV["HERDR_PANE_ID"]] = "different-thread"
+        self.assertEqual(panes.refresh_panes(snapshot(), runner, NOW), 0)
+        self.assertFalse(panes.registration_path(ENV["HERDR_PANE_ID"]).exists())
+
     def test_refresh_updates_prunes_and_clears(self):
         for pane in ("w1:p1", "w1:p2", "w1:p3"):
             panes.report(report(), {**ENV, "HERDR_PANE_ID": pane}, Runner(), NOW)

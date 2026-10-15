@@ -22,13 +22,25 @@ class Runner:
     def __init__(self, agents=None):
         self.calls = []
         self.agents = agents or {}
+        self.sessions = {}
 
     def __call__(self, args, **kwargs):
         self.calls.append(args)
+        if args[1:3] == ["pane", "report-agent-session"] and args[args.index("--source") + 1] == "herdr:codex":
+            self.agents[args[3]] = "codex"
+            self.sessions[args[3]] = args[args.index("--agent-session-id") + 1]
+
+        def pane(pane_id, agent):
+            data = {"pane_id": pane_id, "agent": agent}
+            if pane_id in self.sessions:
+                data["agent_session"] = {"kind": "id", "value": self.sessions[pane_id]}
+            return data
+
+        result = {"pane": pane(args[3], self.agents.get(args[3]))} if args[1:3] == ["pane", "get"] else {"panes": [pane(pane_id, agent) for pane_id, agent in self.agents.items()]}
 
         class Result:
             returncode = 0
-            stdout = json.dumps({"result": {"panes": [{"pane_id": pane, "agent": agent} for pane, agent in self.agents.items()]}})
+            stdout = json.dumps({"result": result})
         return Result()
 
     def tokens(self):

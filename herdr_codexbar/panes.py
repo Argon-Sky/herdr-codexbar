@@ -156,13 +156,21 @@ def report(data, env=os.environ, runner=subprocess.run, now=None):
     pane = env.get("HERDR_PANE_ID", "")
     if env.get("HERDR_ENV") != "1" or not env.get("HERDR_SOCKET_PATH") or not PANE_ID.fullmatch(pane):
         return
+    if data.get("session"):
+        result = runner([herdr_bin(env), "pane", "get", pane], check=True, capture_output=True, text=True, timeout=5, env=dict(env))
+        current = json.loads(result.stdout)["result"]["pane"]
+        if current.get("agent") != "codex" or (current.get("agent_session") or {}).get("value") != data["session"]:
+            return
     provider, pool = route(data)
     entry = {"pane": pane, "socket": env["HERDR_SOCKET_PATH"], "herdr": herdr_bin(env), "harness": data["harness"], "provider": provider, "pool": pool}
+    if data.get("session"):
+        entry["session"] = data["session"]
     register(entry)
     publish(entry, {**meta_tokens(data), **quota_tokens(provider, pool, codexbar.read_snapshot(now), now)}, runner)
+    return True
 
 
-def clear(harness, env=os.environ, runner=subprocess.run):
+def clear(harness, env=os.environ, runner=subprocess.run, session=None):
     """Remove our rows from the calling pane when its harness exits, unless another harness has reported there since."""
     pane = env.get("HERDR_PANE_ID", "")
     if env.get("HERDR_ENV") != "1" or not PANE_ID.fullmatch(pane):
@@ -172,17 +180,17 @@ def clear(harness, env=os.environ, runner=subprocess.run):
         entry = json.loads(path.read_text())
     except (OSError, ValueError):
         return
-    if entry.get("harness") != harness:
+    if entry.get("harness") != harness or session is not None and entry.get("session") != session:
         return
     path.unlink(missing_ok=True)
     publish(entry, dict.fromkeys(QUOTA_TOKENS + META_TOKENS), runner, remove=True)
 
 
-def live_agents(entry, runner=subprocess.run):
-    """Pane ID -> agent ID for one Herdr server."""
+def live_panes(entry, runner=subprocess.run):
+    """Pane ID -> live pane, including its agent and session, for one Herdr server."""
     result = runner([entry["herdr"], "pane", "list"], check=True, capture_output=True, text=True, timeout=5,
                     env=dict(os.environ, HERDR_SOCKET_PATH=entry["socket"]))
-    return {pane["pane_id"]: pane.get("agent") for pane in json.loads(result.stdout)["result"]["panes"]}
+    return {pane["pane_id"]: pane for pane in json.loads(result.stdout)["result"]["panes"]}
 
 
 def refresh_panes(snapshot, runner=subprocess.run, now=None):
@@ -199,11 +207,11 @@ def refresh_panes(snapshot, runner=subprocess.run, now=None):
                 path.unlink(missing_ok=True)  # Its Herdr session was deleted, so its panes never come back.
                 continue
             if entry["socket"] not in servers:
-                servers[entry["socket"]] = live_agents(entry, runner)
+                servers[entry["socket"]] = live_panes(entry, runner)
             agents = servers[entry["socket"]]
             if entry["pane"] not in agents:
                 path.unlink(missing_ok=True)  # Pane closed; pane IDs are never reused.
-            elif agents[entry["pane"]] != HARNESSES[entry["harness"]]:
+            elif agents[entry["pane"]].get("agent") != HARNESSES[entry["harness"]] or entry.get("session") and (agents[entry["pane"]].get("agent_session") or {}).get("value") != entry["session"]:
                 path.unlink(missing_ok=True)  # Another program took over the pane: remove our rows.
                 publish(entry, dict.fromkeys(QUOTA_TOKENS + META_TOKENS), runner, remove=True)
             else:

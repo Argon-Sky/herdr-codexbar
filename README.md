@@ -57,7 +57,7 @@ An add-on for [Herdr](https://github.com/herdrdev/herdr) that shows, under each 
 
 Notes:
 
-- Codex needs `hooks = true` under `[features]` in `~/.codex/config.toml`, and must be started with `--no-daemon`. Its quota appears after the first message.
+- Codex setup follows `CODEX_HOME` (default `~/.codex`). Standalone sessions use `--no-daemon`. [Agent Identity Launcher](https://github.com/Argon-Sky/agent-identity-launcher) remote sessions use a terminal connection that reports each pane's session while keeping the shared server available to ChatGPT.
 - Claude Code and Codex reach only some OpenCode Go models: MiniMax and Qwen in Claude Code, GPT Luna, Grok and Muse Spark in Codex. Translating proxies such as LiteLLM are not supported.
 - X Premium+ works like SuperGrok, and higher tiers (Claude Max, ChatGPT Pro and similar) like the plans above.
 - Qwen Cloud Token Plan is the [Qwen Cloud plan](https://www.qwencloud.com/pricing/token-plan), not Alibaba Cloud Model Studio's [Coding Plan](https://www.alibabacloud.com/help/en/model-studio/coding-plan). CodexBar calls its provider Qwen Cloud. Sign in with `/connect` → Alibaba Token Plan in OpenCode and Kilo CLI, `/login` → Qwen Token Plan in Pi, and `/login` → QwenCloud Token Plan in Oh My Pi.
@@ -80,6 +80,8 @@ herdr-codexbar setup
 ```
 
 `setup` wires each agent it finds, adds the sidebar rows to `~/.config/herdr/config.toml`, and starts the poller with `brew services`. Restart running agents afterwards; Codex asks you to approve its new hooks on the first start.
+
+If your launcher sets `CODEX_HOME`, run `setup` with that same environment. For Agent Identity Launcher's Codex remote mode, use the bot's Codex home. Reopen or resume the terminal session after setup; the bot server and ChatGPT connection can keep running.
 
 It changes only what it needs: comments and other settings stay as they are, and every file it edits is backed up first to `~/.cache/herdr-codexbar/backups`. If an agent already has a status line from another tool, `setup` stops and tells you; `setup --force` replaces it.
 
@@ -104,7 +106,8 @@ Run `herdr-codexbar check` first. It shows what is missing and how to fix it. Th
 
 - **Bars show as boxes or question marks:** your terminal font is not Fira Code 6+ or a Nerd Font 3+.
 - **Rows are cut off:** the sidebar needs 65 columns. `setup` sets it to 70 when you have not set it, and `check` warns when your own width is narrower.
-- **Only one Codex pane shows rows:** Codex 0.158 and later run every session in one shared background server by default, and its hooks report as the pane that started it. Start Codex with `--no-daemon`, for example `alias codex="codex --no-daemon"`, and stop the running server with `codex app-server daemon stop`. `check` warns while it runs.
+- **Codex rows disappeared after changing launchers:** run `check` and `setup` with the launcher's `CODEX_HOME`, then reopen or resume the terminal session. Agent Identity Launcher's remote mode keeps using its existing bot server and ChatGPT pairing.
+- **Plain Codex sessions share the wrong pane:** use `--no-daemon` for standalone sessions. For shared sessions with native ChatGPT remote access, use Agent Identity Launcher's remote mode and run `setup` in its bot home.
 - **Qwen Code has no entry in the sidebar:** Herdr finds Qwen Code by its `qwen` command, which the standalone installer (`~/.local/lib/qwen-code`) starts as `node …/cli-entry.js` instead. Install Qwen Code with npm, `npm i -g @qwen-code/qwen-code`, and remove the standalone one.
 - **An agent shows no rows:** your `[ui.sidebar.agents.rows_by_agent]` has its own layout for that agent, which Herdr uses instead of ours. `check` tells you which.
 

@@ -13,6 +13,8 @@ from numbers import Real
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from .paths import codex_home
+
 # Codex's footer excludes this fixed prompt overhead from "Context N% used"; mirror it.
 CODEX_BASELINE_TOKENS = 12_000
 CHUNK = 256 * 1024
@@ -146,7 +148,7 @@ def codex_transcript(path):
 def codex_effort(home):
     """The reasoning effort configured for Codex, used when the transcript has none."""
     try:
-        with (home / ".codex/config.toml").open("rb") as source:
+        with (codex_home(home) / "config.toml").open("rb") as source:
             return tomllib.load(source).get("model_reasoning_effort")
     except (OSError, ValueError):
         return None
@@ -157,10 +159,6 @@ def codex(payload, home=None):
     provider, turn, usage = codex_transcript(payload.get("transcript_path"))
     tokens = number((usage.get("last_token_usage") or {}).get("total_tokens"))
     window = number(usage.get("model_context_window"))
-    percent = None
-    if tokens is not None and window:
-        effective = window - CODEX_BASELINE_TOKENS
-        percent = 100 if effective <= 0 else min(100, max(0, tokens - CODEX_BASELINE_TOKENS) / effective * 100)
     return {
         "harness": "codex",
         "provider_id": provider or "openai",
@@ -168,8 +166,15 @@ def codex(payload, home=None):
         "effort": turn.get("effort") or codex_effort(home or Path.home()),
         "context_used": tokens,
         "context_limit": window,
-        "context_percent": percent,
+        "context_percent": codex_context_percent(tokens, window),
     }
+
+
+def codex_context_percent(tokens, window):
+    if tokens is None or not window:
+        return None
+    effective = window - CODEX_BASELINE_TOKENS
+    return 100 if effective <= 0 else min(100, max(0, tokens - CODEX_BASELINE_TOKENS) / effective * 100)
 
 
 def qwen_base_url(identity, home):
