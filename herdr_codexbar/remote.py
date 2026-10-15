@@ -62,7 +62,16 @@ class Observer:
 
     def work(self):
         while True:
-            event = self.events.get()
+            try:
+                event = self.events.get(timeout=1)
+            except queue.Empty:
+                if not self.closed and self.thread and not self.bound:
+                    try:
+                        # Session replies can arrive before Herdr recognizes the terminal process.
+                        self.update("retry", {"threadId": self.thread["id"]}, {}, time.time_ns())
+                    except Exception:
+                        pass
+                continue
             try:
                 if event is None:
                     return
@@ -103,6 +112,7 @@ class Observer:
             used = harnesses.number((self.usage.get("last") or {}).get("totalTokens"))
             limit = harnesses.number(self.usage.get("modelContextWindow"))
             data.update(context_used=used, context_limit=limit, context_percent=harnesses.codex_context_percent(used, limit))
+        self.bound = False
         self.bound = bool(panes.report({**data, "session": self.thread["id"]}, self.env, self.runner))
 
     def close(self):

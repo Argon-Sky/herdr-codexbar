@@ -85,6 +85,28 @@ class ObserverTests(unittest.TestCase):
         self.assertTrue(self.observer.bound)
         self.assertEqual(self.runner.sessions[ENV["HERDR_PANE_ID"]], "thread-one")
 
+    def test_initial_report_retries_after_herdr_detects_the_process(self):
+        detected = threading.Event()
+        published = threading.Event()
+        original = self.runner
+
+        def delayed_detection(args, **kwargs):
+            result = original(args, **kwargs)
+            if args[1:3] == ["pane", "get"] and not detected.is_set():
+                pane = json.loads(result.stdout)
+                pane["result"]["pane"].pop("agent", None)
+                result.stdout = json.dumps(pane)
+            if args[1:3] == ["pane", "report-metadata"] and "hc_model=test-model" in args:
+                published.set()
+            return result
+
+        self.observer.runner = delayed_detection
+        self.reply()
+        self.assertFalse(self.observer.bound)
+        detected.set()
+        self.assertTrue(published.wait(3), "an idle resumed session must publish without another Codex event")
+        self.assertEqual(self.runner.tokens()["hc_model"], "test-model")
+
     def test_request_ids_are_scoped_to_each_connection(self):
         for connection in ("terminal", "picker"):
             self.observer.sent({"id": 1, "method": "thread/resume"}, connection)
