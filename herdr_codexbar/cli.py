@@ -10,7 +10,7 @@ import json
 import subprocess
 import sys
 
-from . import ISSUES_URL, __version__, codexbar, harnesses, install, panes
+from . import ISSUES_URL, __version__, codexbar, harnesses, install, panes, remote
 
 REPORT_KEYS = ("provider_id", "model", "effort", "context_used", "context_limit", "context_percent")
 
@@ -26,7 +26,13 @@ def read_stdin():
 def hook(harness):
     """Status-line and hook entrypoint; always silent, always exits 0."""
     try:
-        panes.report(harnesses.PARSERS[harness](read_stdin()))
+        payload = read_stdin()
+        data = harnesses.PARSERS[harness](payload)
+        if harness == "codex":
+            if not payload.get("session_id"):
+                return 0
+            data["session"] = payload["session_id"]
+        panes.report(data)
     except Exception:  # noqa: BLE001 - never break the agent's status line or hook.
         pass
     return 0
@@ -79,6 +85,9 @@ def main(argv=None):
     commands.add_parser("refresh", help="poll CodexBar now and update agent panes")
     hook_parser = commands.add_parser("hook", help="agent status-line or hook entrypoint (reads JSON on stdin)")
     hook_parser.add_argument("harness", choices=sorted(harnesses.PARSERS))
+    remote_parser = commands.add_parser("codex-remote", help="terminal-side Codex sidebar connection (called by Agent Identity Launcher)")
+    remote_parser.add_argument("socket")
+    remote_parser.add_argument("args", nargs=argparse.REMAINDER)
     commands.add_parser("report", help="plugin entrypoint (reads a report as JSON on stdin)")
     clear_parser = commands.add_parser("clear", help="plugin exit entrypoint (removes the pane's rows)")
     clear_parser.add_argument("harness", choices=sorted(panes.HARNESSES))
@@ -98,6 +107,12 @@ def main(argv=None):
         status = clear(args.harness)
     elif args.command == "hook":
         status = hook(args.harness)
+    elif args.command == "codex-remote":
+        try:
+            status = remote.run(args.socket, args.args)
+        except (OSError, ValueError) as error:
+            print(f"herdr-codexbar: {error}", file=sys.stderr)
+            status = 1
     else:
         status = report()
     sys.exit(status)

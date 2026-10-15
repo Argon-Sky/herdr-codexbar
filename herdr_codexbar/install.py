@@ -20,6 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 from . import ISSUES_URL, STATE_DIR, codexbar, panes, tomledit
+from .paths import codex_home
 
 MARKER = "herdr-codexbar"
 # Not resolved: under Homebrew this stays on the stable `opt` path across upgrades.
@@ -118,7 +119,7 @@ def home_dir():
 
 
 def installed(home):
-    return [name for name, (directory, *_) in HARNESSES.items() if (home / directory).is_dir()]
+    return [name for name, (directory, *_) in HARNESSES.items() if (codex_home(home) if name == "codex" else home / directory).is_dir()]
 
 
 # --- Planning: each returns [(path, old text or None, new text or None)]
@@ -209,7 +210,44 @@ def codex_hooks(path, line, remove=False):
                 hooks.pop(event, None)
         if not hooks:
             settings.pop("hooks")
-    return json_change(path, mutate)
+    return json_change(path, mutate, drop_empty=True)
+
+
+def codex_config(home, bin_path, remove=False):
+    directory = codex_home(home)
+    path = directory / "config.toml"
+    old = path.read_text() if path.is_file() else ""
+    config = tomllib.loads(old)
+    if remove:
+        new = old
+        location = tomledit.find_key(old, "features", "hooks")
+        if location:
+            end = old.find("\n", location[0])
+            end = len(old) if end == -1 else end + 1
+            if old[location[0]:end].strip() == "hooks = true  # herdr-codexbar":
+                new = old[:location[0]] + old[end:]
+                span = tomledit.table_span(new, "features")
+                if span and new[span[0]:span[1]].strip() == "[features] # herdr-codexbar":
+                    new = tomledit.remove_table(new, "features")
+    elif "hooks" in config.get("features", {}):
+        if config["features"]["hooks"] is not True:
+            raise Conflict(f"{path}: Codex hooks are disabled; remove features.hooks = false before running setup")
+        new = old
+    else:
+        new = tomledit.set_table(old, "features", {"hooks": "true  # herdr-codexbar"})
+        if tomledit.table_span(old, "features") is None:
+            new = new.replace("[features]\n", "[features] # herdr-codexbar\n", 1)
+    changes = [(path, old or None, new or None)] if new != old else []
+    bridge = directory / f"{MARKER}.json"
+
+    def configure(settings):
+        if remove:
+            if settings.get("command") == bin_path:
+                settings.pop("command")
+        else:
+            settings["command"] = bin_path
+    changes += json_change(bridge, configure, drop_empty=True)
+    return changes
 
 
 def opencode(home, bin_path, remove=False):
@@ -291,7 +329,8 @@ def plan(home, bin_path, force=False, remove=False):
     if "antigravity" in harnesses:
         changes += status_line(home / ".gemini/antigravity-cli/settings.json", f"{line} hook antigravity", force, remove)
     if "codex" in harnesses:
-        changes += codex_hooks(home / ".codex/hooks.json", f"{line} hook codex", remove)
+        changes += codex_hooks(codex_home(home) / "hooks.json", f"{line} hook codex", remove)
+        changes += codex_config(home, bin_path, remove)
     if "copilot" in harnesses:
         changes += status_line(home / ".copilot/settings.json", f"{line} hook copilot", force, remove)
     if "qwen" in harnesses:
@@ -439,11 +478,19 @@ def fonts(home):
 def codex_daemon_running(home):
     """Whether Codex's shared app server is running (Codex 0.158 and later)."""
     try:
-        pid = json.loads((home / ".codex/app-server-daemon/daemon.pid").read_text())["pid"]
+        pid = json.loads((codex_home(home) / "app-server-daemon/daemon.pid").read_text())["pid"]
         os.kill(pid, 0)
     except (OSError, ValueError, KeyError, TypeError):
         return False
     return True
+
+
+def codex_bridge_installed(home):
+    try:
+        command = load_json(codex_home(home) / f"{MARKER}.json").get("command")
+        return isinstance(command, str) and Path(command).is_absolute() and os.access(command, os.X_OK)
+    except (OSError, ValueError):
+        return False
 
 
 def check():
@@ -482,19 +529,30 @@ def check():
     report(bool(harnesses), f"agents found: {', '.join(harnesses) or 'none'}", "install a supported agent, such as Claude Code, Codex, OpenCode or Pi")
     result = run([herdr, "integration", "status"]) if herdr else None
     status = result.stdout if result else ""
+    bridge = codex_bridge_installed(home)
+    daemon = codex_daemon_running(home)
     for name in harnesses:
         _, provider, integration = HARNESSES[name]
-        if integration:
+        if integration and not (name == "codex" and daemon and bridge):
             report(f"{integration}: current" in status, f"Herdr integration for {name}", f"run `herdr integration install {integration}`")
         if provider not in enabled:
             report(False, f"CodexBar provider `{provider}` for {name} is off", f"run `codexbar config enable --provider {provider}` if you use it", required=False)
     if "codex" in harnesses:
         try:
-            hooks_on = tomllib.loads((home / ".codex/config.toml").read_text()).get("features", {}).get("hooks") is True
+            hooks_on = tomllib.loads((codex_home(home) / "config.toml").read_text()).get("features", {}).get("hooks") is True
         except (OSError, ValueError):
             hooks_on = False
-        report(hooks_on, "Codex hooks enabled", "add `hooks = true` under [features] in ~/.codex/config.toml")
-        report(not codex_daemon_running(home), "Codex runs each pane's sessions itself", "start Codex with `--no-daemon` and run `codex app-server daemon stop`: its shared background server runs every session's hooks as the pane that started it, so the other panes show nothing", required=False)
+        report(hooks_on, f"Codex hooks enabled ({codex_home(home)})", "run `herdr-codexbar setup` in the Codex environment you use")
+        report(not daemon or bridge, "Codex pane reporting is configured", "run `herdr-codexbar setup`; shared-daemon sessions use Agent Identity Launcher's terminal connection", required=False)
+        if herdr and os.environ.get("HERDR_ENV") == "1":
+            result = run([herdr, "pane", "list"])
+            try:
+                agents = json.loads(result.stdout)["result"]["panes"] if result and result.returncode == 0 else []
+                codex_panes = [pane for pane in agents if pane.get("agent") == "codex"]
+                if codex_panes:
+                    report(all((pane.get("agent_session") or {}).get("kind") == "id" for pane in codex_panes), "live Codex panes have session bindings", "reopen or resume the terminal sessions through Agent Identity Launcher; keep the bot server running", required=False)
+            except (ValueError, KeyError, TypeError):
+                pass
 
     try:
         bin_path = command()
