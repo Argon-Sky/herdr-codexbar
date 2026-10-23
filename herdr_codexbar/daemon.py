@@ -11,6 +11,7 @@ import subprocess
 import time
 import unicodedata
 from contextlib import closing
+from datetime import datetime
 from pathlib import Path
 
 from . import STATE_DIR, codexbar, harnesses, panes
@@ -24,6 +25,7 @@ WAIT_LIMIT = 300  # Hooks of a thread that never matches, such as one resumed fr
 THREAD_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
 TUI = "codex-tui"
 STATE_DB = "state_5.sqlite"  # Codex's thread database.
+NAMING = 10  # Codex shows a new name in the title a moment after it writes it to the session index.
 
 
 def server_pid(home=None):
@@ -66,6 +68,23 @@ def thread_names(home=None):
     except OSError:
         pass
     return names
+
+
+def just_named(home=None):
+    """IDs of threads Codex named in the last NAMING seconds, whose titles may not show the name yet."""
+    fresh = set()
+    try:
+        with (codex_home(home) / "session_index.jsonl").open(encoding="utf-8") as index:
+            for line in index:
+                try:
+                    entry = json.loads(line)
+                    if time.time() - datetime.fromisoformat(entry["updated_at"]).timestamp() < NAMING:
+                        fresh.add(entry["id"])
+                except (ValueError, KeyError, TypeError):
+                    continue
+    except OSError:
+        pass
+    return fresh
 
 
 def archived_threads(home=None):
@@ -164,6 +183,7 @@ def publish(thread, data, targets, now=None, runner=subprocess.run):
         entry = {"pane": pane["pane_id"], "socket": pane["socket"], "herdr": pane["herdr"], "harness": "codex", "provider": provider, "pool": pool, "session": thread, "shared": True}
         panes.register(entry)
         panes.publish(entry, {**panes.meta_tokens(data), **panes.quota_tokens(provider, pool, snapshot, now)}, runner)
+    drop_elsewhere(thread, {pane["pane_id"] for pane in targets}, runner)
 
 
 def pending_path(thread):
@@ -176,7 +196,10 @@ def report(thread, transcript, data, runner=subprocess.run, now=None, home=None)
         return
     if data.get("thread_source") not in (None, "user"):
         return  # Subagents and reviews belong to their parent's pane.
-    targets = match(thread, data, thread_names(home), panes.agent_panes("codex", runner), archived_threads(home), home)
+    candidates = panes.agent_panes("codex", runner)
+    names = thread_names(home)
+    targets = match(thread, data, names, candidates, archived_threads(home), home)
+    drop_moved([pane for pane in candidates if pane not in targets], names, just_named(home), runner)
     if targets:
         publish(thread, data, targets, now, runner)
         pending_path(thread).unlink(missing_ok=True)
@@ -184,6 +207,7 @@ def report(thread, transcript, data, runner=subprocess.run, now=None, home=None)
         codexbar.write_json(pending_path(thread), {"transcript": transcript, "at": time.time()})
         if data.get("originator") == TUI:
             wait_in_background(thread, runner, now, home)
+    panes.discover(candidates, "codex", harnesses.codex_provider(home), codexbar.read_snapshot(now), runner, now)
 
 
 def place(thread, waiting, names, candidates, archived, runner=subprocess.run, now=None, home=None):
@@ -252,7 +276,32 @@ def retry(runner=subprocess.run, now=None, home=None):
             continue
 
 
-def still_shown(entry, pane, names):
-    """Whether a pane still shows the thread registered for it: a different name in its title means Codex switched threads there."""
+def drop_moved(candidates, names, fresh=(), runner=subprocess.run):
+    """Drop the details from panes that now show another thread than the one registered there."""
+    for pane in candidates:
+        try:
+            entry = json.loads(panes.registration_path(pane["pane_id"]).read_text())
+        except (OSError, ValueError):
+            continue
+        if entry.get("shared") and not still_shown(entry, pane, names, fresh):
+            panes.keep_quota(entry, runner)
+
+
+def drop_elsewhere(thread, kept, runner=subprocess.run):
+    """Drop a thread's details from the other panes registered to it, such as the one it was resumed away from."""
+    for path in panes.PANES_DIR.glob("*.json"):
+        try:
+            entry = json.loads(path.read_text())
+            if entry.get("shared") and entry.get("session") == thread and entry["pane"] not in kept:
+                panes.keep_quota(entry, runner)
+        except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+            continue
+
+
+def still_shown(entry, pane, names, fresh=()):
+    """Whether a pane still shows the thread registered for it: its title shows the thread's name, or no name while the thread has none or Codex has only just named it. Another name, or no name after `/new`, means Codex switched threads there."""
     shown = title_name(pane.get("terminal_title_stripped"))
-    return not shown or shows(shown, names.get(entry["session"]))
+    name = names.get(entry["session"])
+    if not shown:
+        return not name or entry["session"] in fresh
+    return shows(shown, name)

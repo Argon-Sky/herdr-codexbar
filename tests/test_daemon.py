@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from herdr_codexbar import cli, codexbar, daemon, panes
+from herdr_codexbar import cli, codexbar, daemon, harnesses, panes
 
 from .helpers import NOW, Runner, snapshot
 
@@ -39,16 +39,17 @@ class Fixture(unittest.TestCase):
         self.waiting = waiting.start()
         self.addCleanup(waiting.stop)
 
-    def names(self, **names):
+    def names(self, at="2026-01-10T12:00:00Z", **names):
         """Thread ID -> name, written to Codex's session index."""
-        (self.home / "session_index.jsonl").write_text("".join(json.dumps({"id": thread, "thread_name": name, "updated_at": "2026-01-10T12:00:00Z"}) + "\n" for thread, name in names.items()))
+        (self.home / "session_index.jsonl").write_text("".join(json.dumps({"id": thread, "thread_name": name, "updated_at": at}) + "\n" for thread, name in names.items()))
 
     def pane(self, pane_id, title="app", cwd=APP, agent="codex", **values):
         self.runner.agents[pane_id] = agent
         self.runner.details[pane_id] = {"terminal_title_stripped": title, "foreground_cwd": cwd, **values}
 
     def published(self):
-        return sorted({call[3] for call in self.runner.calls if call[1:3] == ["pane", "report-metadata"]})
+        """Panes that received a session's model, not only quota rows."""
+        return sorted({call[3] for call in self.runner.calls if call[1:3] == ["pane", "report-metadata"] and "hc_model=gpt-5.5" in call})
 
     def transcript(self, **meta):
         path = self.home / f"rollout-{len(list(self.home.glob('rollout-*')))}.jsonl"
@@ -293,7 +294,8 @@ class RetryTests(Fixture):
         self.names(**{THREAD: "Fix the login bug"})
         self.runner.details["w1:p2"]["terminal_title_stripped"] = "Fix the login bug | app"
         daemon.retry(self.runner, NOW)
-        self.assertEqual(self.published(), ["w1:p2"])
+        self.assertEqual(json.loads(panes.registration_path("w1:p2").read_text()).get("session"), THREAD)
+        self.assertNotIn("session", json.loads(panes.registration_path("w1:p1").read_text()))
         self.assertFalse(daemon.pending_path(THREAD).exists())
 
     def test_waiting_threads_expire(self):
@@ -395,10 +397,40 @@ class WaitTests(Fixture):
         self.waiting.assert_not_called()
 
 
+class QuotaRowTests(Fixture):
+    def test_every_codex_pane_gets_quota_rows_before_its_session_is_known(self):
+        self.pane("w1:p1", "app")
+        self.pane("w1:p2", "app")
+        self.pane("w1:p3", agent="claude")
+        daemon.report(THREAD, self.transcript(), data(), self.runner, NOW)
+        quota = sorted({call[3] for call in self.runner.calls if "hc_plan=ChatGPT Plus" in call})
+        self.assertEqual(quota, ["w1:p1", "w1:p2"])
+        self.assertEqual(self.published(), [])
+        self.assertNotIn("session", json.loads(panes.registration_path("w1:p1").read_text()))
+
+    def test_registered_panes_are_left_alone(self):
+        self.names(**{THREAD: "Fix the login bug"})
+        self.pane("w1:p1", "Fix the login bug | app")
+        daemon.report(THREAD, "/unused", data(), self.runner, NOW)
+        self.runner.calls.clear()
+        panes.discover(panes.agent_panes("codex", self.runner), "codex", "openai", snapshot(), self.runner, NOW)
+        self.assertFalse(any(call[1:3] == ["pane", "report-metadata"] for call in self.runner.calls))
+        self.assertEqual(json.loads(panes.registration_path("w1:p1").read_text())["session"], THREAD)
+
+    def test_rows_go_when_codex_leaves_the_pane(self):
+        self.pane("w1:p1", "app")
+        panes.discover(panes.agent_panes("codex", self.runner), "codex", "openai", snapshot(), self.runner, NOW)
+        self.runner.agents["w1:p1"] = None
+        self.runner.calls.clear()
+        self.assertEqual(panes.refresh_panes(snapshot(), self.runner, NOW), 0)
+        self.assertFalse(panes.registration_path("w1:p1").exists())
+        self.assertIsNone(self.runner.tokens()["hc_plan"])
+
+
 class RefreshTests(Fixture):
     def refresh(self):
-        names = daemon.thread_names()
-        return panes.refresh_panes(snapshot(), self.runner, NOW, still_shown=lambda entry, pane: daemon.still_shown(entry, pane, names))
+        names, fresh = daemon.thread_names(), daemon.just_named()
+        return panes.refresh_panes(snapshot(), self.runner, NOW, still_shown=lambda entry, pane: daemon.still_shown(entry, pane, names, fresh))
 
     def test_keeps_rows_while_the_pane_shows_the_thread_and_ignores_herdrs_binding(self):
         self.names(**{THREAD: "Fix the login bug"})
@@ -407,15 +439,96 @@ class RefreshTests(Fixture):
         self.assertEqual(self.refresh(), 0)
         self.assertTrue(panes.registration_path("w1:p1").exists())
 
-    def test_clears_rows_after_the_pane_switches_threads(self):
+    def test_drops_details_but_keeps_quota_after_the_pane_switches_threads(self):
         self.names(**{THREAD: "Fix the login bug", OTHER: "Write docs"})
         self.pane("w1:p1", "Fix the login bug | app")
         daemon.report(THREAD, "/unused", data(), self.runner, NOW)
         self.runner.details["w1:p1"]["terminal_title_stripped"] = "Write docs | app"
         self.runner.calls.clear()
         self.assertEqual(self.refresh(), 0)
-        self.assertFalse(panes.registration_path("w1:p1").exists())
+        self.assertNotIn("session", json.loads(panes.registration_path("w1:p1").read_text()))
         self.assertIsNone(self.runner.tokens()["hc_model"])
+        self.assertEqual(self.runner.tokens()["hc_plan"], "ChatGPT Plus")
+
+    def test_a_hook_from_another_thread_drops_stale_details_at_once(self):
+        self.names(**{THREAD: "Fix the login bug", OTHER: "Write docs"})
+        self.pane("w1:p1", "Fix the login bug | app")
+        daemon.report(THREAD, "/unused", data(), self.runner, NOW)
+        # Resumed from another folder: the title shows that thread, which matches no pane in its own folder.
+        self.runner.details["w1:p1"]["terminal_title_stripped"] = "Write docs | other"
+        self.runner.calls.clear()
+        daemon.report(OTHER, self.transcript(cwd="/Users/me/other"), data(cwd="/Users/me/other"), self.runner, NOW)
+        self.assertEqual(self.published(), [])
+        self.assertIsNone(self.runner.tokens()["hc_model"])
+        self.assertNotIn("hc_plan", {key for key, value in self.runner.tokens().items() if value is None})
+        self.assertNotIn("session", json.loads(panes.registration_path("w1:p1").read_text()))
+
+    def test_a_new_thread_in_the_pane_drops_the_old_threads_details(self):
+        self.names(**{THREAD: "Fix the login bug"})
+        self.pane("w1:p1", "Fix the login bug | app")
+        daemon.report(THREAD, "/unused", data(), self.runner, NOW)
+        self.runner.details["w1:p1"]["terminal_title_stripped"] = "app"  # `/new`: no name until Codex names the new thread.
+        self.runner.calls.clear()
+        self.assertEqual(self.refresh(), 0)
+        self.assertNotIn("session", json.loads(panes.registration_path("w1:p1").read_text()))
+        self.assertIsNone(self.runner.tokens()["hc_model"])
+
+    def test_an_unnamed_thread_keeps_its_pane_until_codex_names_it(self):
+        self.pane("w1:p1", "app")
+        daemon.report(THREAD, "/unused", data(), self.runner, NOW)
+        self.assertEqual(self.refresh(), 0)
+        self.names(**{THREAD: "Fix the login bug"})
+        self.runner.details["w1:p1"]["terminal_title_stripped"] = "Fix the login bug | app"
+        self.assertEqual(self.refresh(), 0)
+        self.assertEqual(json.loads(panes.registration_path("w1:p1").read_text())["session"], THREAD)
+
+    def test_a_name_codex_just_wrote_may_not_be_in_the_title_yet(self):
+        self.pane("w1:p1", "app")
+        daemon.report(THREAD, "/unused", data(), self.runner, NOW)
+        self.names(at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), **{THREAD: "Fix the login bug"})
+        self.assertEqual(self.refresh(), 0)
+        daemon.report(OTHER, self.transcript(cwd="/Users/me/other"), data(cwd="/Users/me/other"), self.runner, NOW)
+        self.assertEqual(json.loads(panes.registration_path("w1:p1").read_text())["session"], THREAD)
+
+    def test_resuming_a_thread_elsewhere_drops_it_from_the_pane_that_left_it(self):
+        self.names(**{THREAD: "Fix the login bug"})
+        self.pane("w1:p1", "Fix the login bug | app")
+        daemon.report(THREAD, "/unused", data(), self.runner, NOW)
+        self.runner.details["w1:p1"]["terminal_title_stripped"] = "app"  # `/new` in w1:p1, then `/resume` of the thread in w1:p2.
+        self.pane("w1:p2", "Fix the login bug | app")
+        self.runner.calls.clear()
+        daemon.report(THREAD, "/unused", data(), self.runner, NOW)
+        self.assertEqual(self.published(), ["w1:p2"])
+        self.assertNotIn("session", json.loads(panes.registration_path("w1:p1").read_text()))
+        self.assertTrue(any(call[3:4] == ["w1:p1"] and "--clear-token" in call and "hc_model" in call for call in self.runner.calls))
+
+    def test_binding_a_thread_drops_it_from_every_other_pane(self):
+        self.names(**{THREAD: "Fix the login bug"})
+        self.pane("w1:p1", "Fix the login bug | app")
+        daemon.report(THREAD, "/unused", data(), self.runner, NOW)
+        self.runner.details["w1:p1"]["foreground_cwd"] = "/Users/me/other"  # No longer a pane that shows the thread, though its title has not changed.
+        self.pane("w1:p2", "Fix the login bug | app")
+        daemon.report(THREAD, "/unused", data(), self.runner, NOW)
+        self.assertNotIn("session", json.loads(panes.registration_path("w1:p1").read_text()))
+        self.assertEqual(json.loads(panes.registration_path("w1:p2").read_text())["session"], THREAD)
+
+    def test_a_session_start_on_new_moves_the_pane_to_the_new_thread(self):
+        self.names(**{THREAD: "Fix the login bug"})
+        self.pane("w1:p1", "Fix the login bug | app")
+        daemon.report(THREAD, "/unused", data(), self.runner, NOW)
+        self.runner.details["w1:p1"]["terminal_title_stripped"] = "app"
+        daemon.report(OTHER, self.transcript(), data(), self.runner, NOW)  # SessionStart with source "clear".
+        self.assertEqual(json.loads(panes.registration_path("w1:p1").read_text())["session"], OTHER)
+
+    def test_a_session_start_on_new_drops_the_old_thread_before_the_new_one_has_a_transcript(self):
+        self.names(**{THREAD: "Fix the login bug"})
+        self.pane("w1:p1", "Fix the login bug | app")
+        daemon.report(THREAD, "/unused", data(), self.runner, NOW)
+        self.runner.details["w1:p1"]["terminal_title_stripped"] = "app"
+        missing = str(self.home / "rollout-missing.jsonl")
+        daemon.report(OTHER, missing, harnesses.codex({"transcript_path": missing}), self.runner, NOW)
+        self.assertNotIn("session", json.loads(panes.registration_path("w1:p1").read_text()))
+
 
 if __name__ == "__main__":
     unittest.main()

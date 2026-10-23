@@ -147,13 +147,22 @@ def codex_transcript(path):
     return session or {}, turn or {}, usage or {}
 
 
-def codex_effort(home):
-    """The reasoning effort configured for Codex, used when the transcript has none."""
+def codex_config(home):
     try:
         with (codex_home(home) / "config.toml").open("rb") as source:
-            return tomllib.load(source).get("model_reasoning_effort")
+            return tomllib.load(source)
     except (OSError, ValueError):
-        return None
+        return {}
+
+
+def codex_effort(home):
+    """The reasoning effort configured for Codex, used when the transcript has none."""
+    return codex_config(home).get("model_reasoning_effort")
+
+
+def codex_provider(home=None):
+    """The provider ID configured for Codex, used before a session reports its own."""
+    return codex_config(home or Path.home()).get("model_provider") or "openai"
 
 
 def codex(payload, home=None):
