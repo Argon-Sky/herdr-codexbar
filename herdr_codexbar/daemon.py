@@ -270,7 +270,7 @@ def retry(runner=subprocess.run, now=None, home=None):
                 path.unlink(missing_ok=True)
                 continue
             if names is None:
-                names, candidates, archived = thread_names(home), panes.agent_panes("codex", runner), archived_threads(home)
+                names, candidates, archived = thread_names(home), panes.agent_panes("codex", runner, panes.recorded_herdr()), archived_threads(home)
             place(path.stem, waiting, names, candidates, archived, runner, now, home)
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
             continue

@@ -427,6 +427,19 @@ class QuotaRowTests(Fixture):
         self.assertIsNone(self.runner.tokens()["hc_plan"])
 
 
+class HerdrTests(Fixture):
+    def test_poller_uses_the_herdr_that_hooks_found(self):
+        herdr = Path(tempfile.mkdtemp()) / "herdr"
+        herdr.write_text("#!/bin/sh\n")
+        herdr.chmod(0o755)
+        self.pane("w1:p1", "app")
+        panes.discover([{"pane_id": "w1:p1", "socket": "/tmp/herdr.sock", "herdr": str(herdr)}], "codex", "openai", snapshot(), self.runner, NOW)
+        self.assertEqual(panes.recorded_herdr(), str(herdr))
+        self.runner.calls.clear()
+        panes.agent_panes("codex", self.runner, panes.recorded_herdr())
+        self.assertEqual(self.runner.calls[0][:3], [str(herdr), "session", "list"])
+
+
 class RefreshTests(Fixture):
     def refresh(self):
         names, fresh = daemon.thread_names(), daemon.just_named()

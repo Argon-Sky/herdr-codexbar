@@ -75,7 +75,7 @@ def refresh():
     if panes.refresh_panes(snapshot, still_shown=lambda entry, pane: daemon.still_shown(entry, pane, names, fresh)):
         status = 1
     try:
-        panes.discover(panes.agent_panes("codex"), "codex", harnesses.codex_provider(), snapshot)
+        panes.discover(panes.agent_panes("codex", herdr=panes.recorded_herdr()), "codex", harnesses.codex_provider(), snapshot)
     except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
         print(f"herdr-codexbar: Codex panes: {panes.herdr_error(error)}", file=sys.stderr)
         status = 1

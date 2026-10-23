@@ -193,17 +193,30 @@ def live_panes(entry, runner=subprocess.run):
     return {pane["pane_id"]: pane for pane in json.loads(result.stdout)["result"]["panes"]}
 
 
-def herdr_sockets(runner=subprocess.run):
+def recorded_herdr():
+    """Herdr's binary as agents' hooks found it; the poller's launchd PATH may not reach it."""
+    for path in PANES_DIR.glob("*.json"):
+        try:
+            herdr = json.loads(path.read_text())["herdr"]
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        if isinstance(herdr, str) and os.access(herdr, os.X_OK):
+            return herdr
+    return herdr_bin()
+
+
+def herdr_sockets(herdr, runner=subprocess.run):
     """The socket of every running Herdr session."""
-    result = runner([herdr_bin(), "session", "list", "--json"], check=True, capture_output=True, text=True, timeout=5)
+    result = runner([herdr, "session", "list", "--json"], check=True, capture_output=True, text=True, timeout=5)
     return [session["socket_path"] for session in json.loads(result.stdout)["sessions"] if session.get("running")]
 
 
-def agent_panes(agent, runner=subprocess.run):
+def agent_panes(agent, runner=subprocess.run, herdr=None):
     """Every live pane running an agent, in every Herdr session, with the socket and binary that reach it."""
+    herdr = herdr or herdr_bin()
     found = []
-    for socket in herdr_sockets(runner):
-        server = {"herdr": herdr_bin(), "socket": socket}
+    for socket in herdr_sockets(herdr, runner):
+        server = {"herdr": herdr, "socket": socket}
         found += [{**pane, **server} for pane in live_panes(server, runner).values() if pane.get("agent") == agent]
     return found
 
