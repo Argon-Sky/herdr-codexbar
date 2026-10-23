@@ -17,12 +17,14 @@ def snapshot():
 
 
 class Runner:
-    """Records subprocess calls and answers `pane list` from a pane -> agent map."""
+    """Records subprocess calls and answers `pane list` from a pane -> agent map; `details` adds fields such as titles to a pane."""
 
-    def __init__(self, agents=None):
+    def __init__(self, agents=None, socket="/tmp/herdr.sock"):
         self.calls = []
         self.agents = agents or {}
         self.sessions = {}
+        self.details = {}
+        self.socket = socket
 
     def __call__(self, args, **kwargs):
         self.calls.append(args)
@@ -31,16 +33,21 @@ class Runner:
             self.sessions[args[3]] = args[args.index("--agent-session-id") + 1]
 
         def pane(pane_id, agent):
-            data = {"pane_id": pane_id, "agent": agent}
+            data = {"pane_id": pane_id, "agent": agent, **self.details.get(pane_id, {})}
             if pane_id in self.sessions:
                 data["agent_session"] = {"kind": "id", "value": self.sessions[pane_id]}
             return data
 
-        result = {"pane": pane(args[3], self.agents.get(args[3]))} if args[1:3] == ["pane", "get"] else {"panes": [pane(pane_id, agent) for pane_id, agent in self.agents.items()]}
+        if args[1:3] == ["session", "list"]:
+            output = {"sessions": [{"name": "default", "running": True, "socket_path": self.socket}, {"name": "old", "running": False, "socket_path": "/tmp/stopped.sock"}]}
+        elif args[1:3] == ["pane", "get"]:
+            output = {"result": {"pane": pane(args[3], self.agents.get(args[3]))}}
+        else:
+            output = {"result": {"panes": [pane(pane_id, agent) for pane_id, agent in self.agents.items()]}}
 
         class Result:
             returncode = 0
-            stdout = json.dumps({"result": result})
+            stdout = json.dumps(output)
         return Result()
 
     def tokens(self):

@@ -193,8 +193,31 @@ def live_panes(entry, runner=subprocess.run):
     return {pane["pane_id"]: pane for pane in json.loads(result.stdout)["result"]["panes"]}
 
 
-def refresh_panes(snapshot, runner=subprocess.run, now=None):
-    """Update quota rows in every registered pane; forget closed panes and replaced agents."""
+def herdr_sockets(runner=subprocess.run):
+    """The socket of every running Herdr session."""
+    result = runner([herdr_bin(), "session", "list", "--json"], check=True, capture_output=True, text=True, timeout=5)
+    return [session["socket_path"] for session in json.loads(result.stdout)["sessions"] if session.get("running")]
+
+
+def agent_panes(agent, runner=subprocess.run):
+    """Every live pane running an agent, in every Herdr session, with the socket and binary that reach it."""
+    found = []
+    for socket in herdr_sockets(runner):
+        server = {"herdr": herdr_bin(), "socket": socket}
+        found += [{**pane, **server} for pane in live_panes(server, runner).values() if pane.get("agent") == agent]
+    return found
+
+
+def refresh_panes(snapshot, runner=subprocess.run, now=None, still_shown=None):
+    """Update quota rows in every registered pane; forget closed panes and replaced agents.
+
+    `still_shown(entry, pane)` checks panes that Codex's shared app server reported for, where Herdr's session binding is not the pane's.
+    """
+    def shown(entry, pane):
+        if entry.get("shared"):
+            return still_shown is None or still_shown(entry, pane)
+        return (pane.get("agent_session") or {}).get("value") == entry["session"]
+
     failed = 0
     servers = {}
     for path in PANES_DIR.glob("*.json"):
@@ -211,7 +234,7 @@ def refresh_panes(snapshot, runner=subprocess.run, now=None):
             agents = servers[entry["socket"]]
             if entry["pane"] not in agents:
                 path.unlink(missing_ok=True)  # Pane closed; pane IDs are never reused.
-            elif agents[entry["pane"]].get("agent") != HARNESSES[entry["harness"]] or entry.get("session") and (agents[entry["pane"]].get("agent_session") or {}).get("value") != entry["session"]:
+            elif agents[entry["pane"]].get("agent") != HARNESSES[entry["harness"]] or entry.get("session") and not shown(entry, agents[entry["pane"]]):
                 path.unlink(missing_ok=True)  # Another program took over the pane: remove our rows.
                 publish(entry, dict.fromkeys(QUOTA_TOKENS + META_TOKENS), runner, remove=True)
             else:

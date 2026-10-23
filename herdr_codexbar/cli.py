@@ -10,7 +10,7 @@ import json
 import subprocess
 import sys
 
-from . import ISSUES_URL, __version__, codexbar, harnesses, install, panes, remote
+from . import ISSUES_URL, __version__, codexbar, daemon, harnesses, install, panes, remote
 
 REPORT_KEYS = ("provider_id", "model", "effort", "context_used", "context_limit", "context_percent")
 
@@ -32,6 +32,9 @@ def hook(harness):
             if not payload.get("session_id"):
                 return 0
             data["session"] = payload["session_id"]
+            if daemon.runs_in_server():
+                daemon.report(payload["session_id"], payload.get("transcript_path"), data)
+                return 0
         panes.report(data)
     except Exception:  # noqa: BLE001 - never break the agent's status line or hook.
         pass
@@ -67,7 +70,9 @@ def refresh():
     except (OSError, ValueError, TypeError, subprocess.SubprocessError) as error:
         print(f"herdr-codexbar: CodexBar poll failed: {error}", file=sys.stderr)
         snapshot, status = codexbar.read_snapshot(), 1
-    if panes.refresh_panes(snapshot):
+    daemon.retry()
+    names = daemon.thread_names()
+    if panes.refresh_panes(snapshot, still_shown=lambda entry, pane: daemon.still_shown(entry, pane, names)):
         status = 1
     return status
 
