@@ -231,7 +231,7 @@ def relay(source, destination, observe):
 def run(socket_path, command, env=os.environ):
     """Keep the TUI attached to the verified daemon; own only a temporary local socket."""
     if command[1:3] != ["--remote", f"unix://{socket_path}"] or env.get("HERDR_ENV") != "1" or not panes.PANE_ID.fullmatch(env.get("HERDR_PANE_ID", "")) or not env.get("HERDR_SOCKET_PATH"):
-        raise ValueError("Codex sidebar connection requires Herdr context and the launcher's verified socket")
+        raise ValueError("Codex sidebar connection requires Herdr context and a Codex command with `--remote unix://SOCKET` for the same socket")
     observer = Observer(env)
     handlers = {}
     connections = set()

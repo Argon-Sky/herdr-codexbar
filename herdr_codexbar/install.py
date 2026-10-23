@@ -148,7 +148,8 @@ def json_change(path, mutate, drop_empty=False):
     return [(path, old, json.dumps(updated, indent=2, ensure_ascii=False) + "\n" if keep else None)]
 
 
-def status_line(path, line, force, remove=False):
+def status_line(path, line, force, remove=False, padding=True):
+    """Antigravity drops `padding` from its settings on every start, so it gets none (`padding=False`)."""
     def mutate(settings):
         current = settings.get("statusLine") or {}
         ours = MARKER in str(current.get("command", ""))
@@ -158,7 +159,9 @@ def status_line(path, line, force, remove=False):
             return
         if current.get("command") and not ours and not force:
             raise Conflict(f"{path} already has a statusLine ({current['command']}); rerun with --force to replace it")
-        settings["statusLine"] = {"type": "command", "command": line, "padding": current.get("padding", 0)}
+        settings["statusLine"] = {"type": "command", "command": line}
+        if padding or "padding" in current:
+            settings["statusLine"]["padding"] = current.get("padding", 0)
     return json_change(path, mutate)
 
 
@@ -327,7 +330,7 @@ def plan(home, bin_path, force=False, remove=False):
     if "claude" in harnesses:
         changes += status_line(home / ".claude/settings.json", f"{line} hook claude", force, remove)
     if "antigravity" in harnesses:
-        changes += status_line(home / ".gemini/antigravity-cli/settings.json", f"{line} hook antigravity", force, remove)
+        changes += status_line(home / ".gemini/antigravity-cli/settings.json", f"{line} hook antigravity", force, remove, padding=False)
     if "codex" in harnesses:
         changes += codex_hooks(codex_home(home) / "hooks.json", f"{line} hook codex", remove)
         changes += codex_config(home, bin_path, remove)
@@ -543,14 +546,14 @@ def check():
         except (OSError, ValueError):
             hooks_on = False
         report(hooks_on, f"Codex hooks enabled ({codex_home(home)})", "run `herdr-codexbar setup` in the Codex environment you use")
-        report(not daemon or bridge, "Codex pane reporting is configured", "run `herdr-codexbar setup`; shared-daemon sessions use Agent Identity Launcher's terminal connection", required=False)
+        report(not daemon or bridge, "Codex pane reporting is configured", "run `herdr-codexbar setup`, and start Codex with `--no-daemon`", required=False)
         if herdr and os.environ.get("HERDR_ENV") == "1":
             result = run([herdr, "pane", "list"])
             try:
                 agents = json.loads(result.stdout)["result"]["panes"] if result and result.returncode == 0 else []
                 codex_panes = [pane for pane in agents if pane.get("agent") == "codex"]
                 if codex_panes:
-                    report(all((pane.get("agent_session") or {}).get("kind") == "id" for pane in codex_panes), "live Codex panes have session bindings", "reopen or resume the terminal sessions through Agent Identity Launcher; keep the bot server running", required=False)
+                    report(all((pane.get("agent_session") or {}).get("kind") == "id" for pane in codex_panes), "live Codex panes have session bindings", "quit those Codex sessions and resume them with `codex resume --no-daemon`", required=False)
             except (ValueError, KeyError, TypeError):
                 pass
 

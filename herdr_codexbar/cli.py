@@ -85,7 +85,7 @@ def main(argv=None):
     commands.add_parser("refresh", help="poll CodexBar now and update agent panes")
     hook_parser = commands.add_parser("hook", help="agent status-line or hook entrypoint (reads JSON on stdin)")
     hook_parser.add_argument("harness", choices=sorted(harnesses.PARSERS))
-    remote_parser = commands.add_parser("codex-remote", help="terminal-side Codex sidebar connection (called by Agent Identity Launcher)")
+    remote_parser = commands.add_parser("codex-remote", help="terminal-side Codex sidebar connection for `codex --remote unix://SOCKET`")
     remote_parser.add_argument("socket")
     remote_parser.add_argument("args", nargs=argparse.REMAINDER)
     commands.add_parser("report", help="plugin entrypoint (reads a report as JSON on stdin)")
