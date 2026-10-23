@@ -10,7 +10,7 @@ import json
 import subprocess
 import sys
 
-from . import ISSUES_URL, __version__, codexbar, daemon, harnesses, install, panes, remote
+from . import ISSUES_URL, __version__, codexbar, daemon, harnesses, install, panes
 
 REPORT_KEYS = ("provider_id", "model", "effort", "context_used", "context_limit", "context_percent")
 
@@ -95,9 +95,6 @@ def main(argv=None):
     commands.add_parser("refresh", help="poll CodexBar now and update agent panes")
     hook_parser = commands.add_parser("hook", help="agent status-line or hook entrypoint (reads JSON on stdin)")
     hook_parser.add_argument("harness", choices=sorted(harnesses.PARSERS))
-    remote_parser = commands.add_parser("codex-remote", help="terminal-side Codex sidebar connection (called by Agent Identity Launcher)")
-    remote_parser.add_argument("socket")
-    remote_parser.add_argument("args", nargs=argparse.REMAINDER)
     commands.add_parser("report", help="plugin entrypoint (reads a report as JSON on stdin)")
     clear_parser = commands.add_parser("clear", help="plugin exit entrypoint (removes the pane's rows)")
     clear_parser.add_argument("harness", choices=sorted(panes.HARNESSES))
@@ -117,12 +114,6 @@ def main(argv=None):
         status = clear(args.harness)
     elif args.command == "hook":
         status = hook(args.harness)
-    elif args.command == "codex-remote":
-        try:
-            status = remote.run(args.socket, args.args)
-        except (OSError, ValueError) as error:
-            print(f"herdr-codexbar: {error}", file=sys.stderr)
-            status = 1
     else:
         status = report()
     sys.exit(status)

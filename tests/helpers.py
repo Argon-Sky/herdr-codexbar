@@ -28,9 +28,6 @@ class Runner:
 
     def __call__(self, args, **kwargs):
         self.calls.append(args)
-        if args[1:3] == ["pane", "report-agent-session"] and args[args.index("--source") + 1] == "herdr:codex":
-            self.agents[args[3]] = "codex"
-            self.sessions[args[3]] = args[args.index("--agent-session-id") + 1]
 
         def pane(pane_id, agent):
             data = {"pane_id": pane_id, "agent": agent, **self.details.get(pane_id, {})}
