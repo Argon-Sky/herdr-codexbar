@@ -523,7 +523,8 @@ def check():
             title = tomllib.loads((codex_home(home) / "config.toml").read_text()).get("tui", {}).get("terminal_title")
         except (OSError, ValueError):
             title = None
-        report(title is None or "thread-title" in title, "Codex's terminal title shows the thread name", "add `thread-title` to [tui].terminal_title in Codex's config.toml: Codex panes on its shared app server are found by it", required=False)
+        readable = title is None or isinstance(title, list) and len(title) >= 2 and title[-2] == "thread-title" and set(title[:-2]) <= {"run-state"}
+        report(readable, "Codex's terminal title shows the thread name", "remove [tui].terminal_title from Codex's config.toml, or keep it as the thread title followed by the project: Codex panes on its shared app server are found by it", required=False)
 
     try:
         bin_path = command()
