@@ -38,7 +38,8 @@ class InstallTests(unittest.TestCase):
     def test_setup_wires_every_agent_and_is_idempotent(self):
         install.setup()
         self.assertEqual(self.read(".claude/settings.json")["statusLine"]["command"], f"{BIN} hook claude")
-        self.assertEqual(self.read(".gemini/antigravity-cli/settings.json")["statusLine"]["command"], f"{BIN} hook antigravity")
+        # Antigravity removes `padding` whenever it starts, so setup must not add it back on every run.
+        self.assertEqual(self.read(".gemini/antigravity-cli/settings.json")["statusLine"], {"type": "command", "command": f"{BIN} hook antigravity"})
         self.assertEqual(self.read(".copilot/settings.json"), {"theme": "github", "statusLine": {"type": "command", "command": f"{BIN} hook copilot", "padding": 0}})
         grok = tomllib.loads((self.home / ".grok/config.toml").read_text())
         self.assertEqual(grok["ui"], {"theme": "dark", "status_line": {"type": "command", "command": f"{BIN} hook grok"}})
