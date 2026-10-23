@@ -546,14 +546,14 @@ def check():
         except (OSError, ValueError):
             hooks_on = False
         report(hooks_on, f"Codex hooks enabled ({codex_home(home)})", "run `herdr-codexbar setup` in the Codex environment you use")
-        report(not daemon or bridge, "Codex pane reporting is configured", "run `herdr-codexbar setup`, and start Codex with `--no-daemon`", required=False)
+        report(not daemon or bridge, "Codex pane reporting is configured", "run `herdr-codexbar setup`, then start Codex in Herdr through `codex-remote` or with `--no-daemon`, as the README's Codex section shows", required=False)
         if herdr and os.environ.get("HERDR_ENV") == "1":
             result = run([herdr, "pane", "list"])
             try:
                 agents = json.loads(result.stdout)["result"]["panes"] if result and result.returncode == 0 else []
                 codex_panes = [pane for pane in agents if pane.get("agent") == "codex"]
                 if codex_panes:
-                    report(all((pane.get("agent_session") or {}).get("kind") == "id" for pane in codex_panes), "live Codex panes have session bindings", "quit those Codex sessions and resume them with `codex resume --no-daemon`", required=False)
+                    report(all((pane.get("agent_session") or {}).get("kind") == "id" for pane in codex_panes), "live Codex panes have session bindings", "quit those Codex sessions and resume them through `codex-remote` or with `--no-daemon`, as the README's Codex section shows", required=False)
             except (ValueError, KeyError, TypeError):
                 pass
 

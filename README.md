@@ -57,7 +57,7 @@ An add-on for [Herdr](https://github.com/herdrdev/herdr) that shows, under each 
 
 Notes:
 
-- Codex setup follows `CODEX_HOME` (default `~/.codex`). Codex runs with `--no-daemon`, as described under [Install](#install).
+- Codex setup follows `CODEX_HOME` (default `~/.codex`). How to start Codex is under [Codex](#codex).
 - Claude Code and Codex reach only some OpenCode Go models: MiniMax and Qwen in Claude Code, GPT Luna, Grok and Muse Spark in Codex. Translating proxies such as LiteLLM are not supported.
 - X Premium+ works like SuperGrok, and higher tiers (Claude Max, ChatGPT Pro and similar) like the plans above.
 - Qwen Cloud Token Plan is the [Qwen Cloud plan](https://www.qwencloud.com/pricing/token-plan), not Alibaba Cloud Model Studio's [Coding Plan](https://www.alibabacloud.com/help/en/model-studio/coding-plan). CodexBar calls its provider Qwen Cloud. Sign in with `/connect` → Alibaba Token Plan in OpenCode and Kilo CLI, `/login` → Qwen Token Plan in Pi, and `/login` → QwenCloud Token Plan in Oh My Pi.
@@ -81,9 +81,37 @@ herdr-codexbar setup
 
 `setup` wires each agent it finds, adds the sidebar rows to `~/.config/herdr/config.toml`, and starts the poller with `brew services`. Restart running agents afterwards; Codex asks you to approve its new hooks on the first start.
 
-Start Codex with `--no-daemon`, for example with `alias codex='codex --no-daemon'` in `~/.zshrc`. Without it, Codex attaches to its shared background server, whose hooks cannot tell which pane they belong to, and the sidebar shows no Codex rows. If you set `CODEX_HOME` for Codex, run `setup` with that same environment.
-
 It changes only what it needs: comments and other settings stay as they are, and every file it edits is backed up first to `~/.cache/herdr-codexbar/backups`. If an agent already has a status line from another tool, `setup` stops and tells you; `setup --force` replaces it.
+
+### Codex
+
+Codex runs its sessions on a shared background server by default. That server's hooks cannot tell which pane they belong to, so a plain `codex` in Herdr shows no Codex rows. Pick one of two ways to start it in Herdr. If you set `CODEX_HOME` for Codex, run `setup` with that same environment.
+
+**Shared server**, which keeps your sessions reachable from ChatGPT on your phone and other devices when Codex remote control is on. herdr-codexbar's `codex-remote` connects each terminal to the shared server and reports its session to its own pane. Add this function to `~/.zshrc`; outside Herdr and for subcommands it runs plain `codex`:
+
+```zsh
+codex() {
+  local bridge sock
+  local -a cd
+  case ${1:-} in
+    agents|exec|e|review|login|logout|mcp|plugin|app-server|remote-control|app|completion|update|doctor|sandbox|debug|apply|a|queue|archive|delete|migrate-rollouts|unarchive|cloud|exec-server|features|help|-h|--help|-V|--version)
+      command codex "$@"; return ;;
+  esac
+  if [[ $HERDR_ENV == 1 && -n $HERDR_PANE_ID && " $* " != *" --no-daemon "* && " $* " != *" --remote"* ]] &&
+    bridge=$(plutil -extract command raw -o - "${CODEX_HOME:-$HOME/.codex}/herdr-codexbar.json" 2>/dev/null) &&
+    sock=$(command codex app-server daemon start | plutil -extract socketPath raw -o - - 2>/dev/null); then
+    # The shared server has its own working directory, so pass this one unless you chose one or resume a session.
+    [[ $1 == (resume|fork) || " $* " == *" -C "* || " $* " == *" --cd"* ]] || cd=(--cd "$PWD")
+    "$bridge" codex-remote "$sock" "$(whence -p codex)" --remote "unix://$sock" "${cd[@]}" "$@"
+  else
+    command codex "$@"
+  fi
+}
+```
+
+`codex app-server daemon start` starts the shared server only when it is not running, and otherwise just returns its socket.
+
+**Standalone**, when you don't need remote access: start Codex with `--no-daemon`, for example with `alias codex='codex --no-daemon'` in `~/.zshrc`. Each session then runs its own server in its own pane.
 
 ## Uninstall
 
@@ -107,7 +135,7 @@ Run `herdr-codexbar check` first. It shows what is missing and how to fix it. Th
 - **Bars show as boxes or question marks:** your terminal font is not Fira Code 6+ or a Nerd Font 3+.
 - **Rows are cut off:** the sidebar needs 65 columns. `setup` sets it to 70 when you have not set it, and `check` warns when your own width is narrower.
 - **Codex rows disappeared after changing `CODEX_HOME`:** run `check` and `setup` with that `CODEX_HOME`, then restart or resume the Codex session.
-- **Codex shows no rows, or rows on the wrong pane:** the session is attached to Codex's shared background server. Quit it and start Codex with `--no-daemon`, or resume it with `codex resume --no-daemon`.
+- **Codex shows no rows, or rows on the wrong pane:** the session is attached to Codex's shared background server without `codex-remote`. Quit it and start Codex as described under [Codex](#codex), with the `codex` function or with `--no-daemon`.
 - **Qwen Code has no entry in the sidebar:** Herdr finds Qwen Code by its `qwen` command, which the standalone installer (`~/.local/lib/qwen-code`) starts as `node …/cli-entry.js` instead. Install Qwen Code with npm, `npm i -g @qwen-code/qwen-code`, and remove the standalone one.
 - **An agent shows no rows:** your `[ui.sidebar.agents.rows_by_agent]` has its own layout for that agent, which Herdr uses instead of ours. `check` tells you which.
 
