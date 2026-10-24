@@ -107,6 +107,9 @@ def quota_tokens(provider, pool, snapshot, now=None):
         return values  # Not enabled in CodexBar.
     values["hc_plan"] = data["plan"]
     values["hc_pool"] = POOL_NAMES.get(pool)
+    if data.get("failed"):
+        values["hc_q1_label"] = "quota unavailable"
+        return values
     for row, window in enumerate(data["pools"].get(pool or "", [])[:3], 1):
         parts = render.quota_parts(window, now)
         bar = f"bar_{parts['state']}" if parts["state"] else "bar"

@@ -56,6 +56,11 @@ class TokenTests(unittest.TestCase):
         self.assertEqual(panes.quota_tokens(None, None, snapshot()), dict.fromkeys(panes.QUOTA_TOKENS))
         self.assertEqual(panes.quota_tokens("unsupported-example", None, snapshot()), dict.fromkeys(panes.QUOTA_TOKENS))
 
+    def test_failed_provider_shows_quota_unavailable(self):
+        data = {"updatedAt": NOW.isoformat(), "providers": {"opencodego": {"name": "OpenCode Go", "plan": "OpenCode Go", "pools": {}, "failed": True}}}
+        values = panes.quota_tokens("opencodego", None, data, NOW)
+        self.assertEqual({key: value for key, value in values.items() if value}, {"hc_plan": "OpenCode Go", "hc_q1_label": "quota unavailable"})
+
 
 class DisplayNameTests(unittest.TestCase):
     def test_command_code_shows_the_bare_agent_id(self):
