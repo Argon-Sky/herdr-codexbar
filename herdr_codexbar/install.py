@@ -148,7 +148,8 @@ def json_change(path, mutate, drop_empty=False):
     return [(path, old, json.dumps(updated, indent=2, ensure_ascii=False) + "\n" if keep else None)]
 
 
-def status_line(path, line, force, remove=False):
+def status_line(path, line, force, remove=False, padding=True):
+    """Antigravity drops `padding` from its settings on every start, so it gets none (`padding=False`)."""
     def mutate(settings):
         current = settings.get("statusLine") or {}
         ours = MARKER in str(current.get("command", ""))
@@ -158,7 +159,9 @@ def status_line(path, line, force, remove=False):
             return
         if current.get("command") and not ours and not force:
             raise Conflict(f"{path} already has a statusLine ({current['command']}); rerun with --force to replace it")
-        settings["statusLine"] = {"type": "command", "command": line, "padding": current.get("padding", 0)}
+        settings["statusLine"] = {"type": "command", "command": line}
+        if padding or "padding" in current:
+            settings["statusLine"]["padding"] = current.get("padding", 0)
     return json_change(path, mutate)
 
 
@@ -327,7 +330,7 @@ def plan(home, bin_path, force=False, remove=False):
     if "claude" in harnesses:
         changes += status_line(home / ".claude/settings.json", f"{line} hook claude", force, remove)
     if "antigravity" in harnesses:
-        changes += status_line(home / ".gemini/antigravity-cli/settings.json", f"{line} hook antigravity", force, remove)
+        changes += status_line(home / ".gemini/antigravity-cli/settings.json", f"{line} hook antigravity", force, remove, padding=False)
     if "codex" in harnesses:
         changes += codex_hooks(codex_home(home) / "hooks.json", f"{line} hook codex", remove)
         changes += codex_config(home, bin_path, remove)
