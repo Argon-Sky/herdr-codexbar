@@ -193,8 +193,63 @@ def live_panes(entry, runner=subprocess.run):
     return {pane["pane_id"]: pane for pane in json.loads(result.stdout)["result"]["panes"]}
 
 
-def refresh_panes(snapshot, runner=subprocess.run, now=None):
-    """Update quota rows in every registered pane; forget closed panes and replaced agents."""
+def recorded_herdr():
+    """Herdr's binary as agents' hooks found it; the poller's launchd PATH may not reach it."""
+    for path in PANES_DIR.glob("*.json"):
+        try:
+            herdr = json.loads(path.read_text())["herdr"]
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+        if isinstance(herdr, str) and os.access(herdr, os.X_OK):
+            return herdr
+    return herdr_bin()
+
+
+def herdr_sockets(herdr, runner=subprocess.run):
+    """The socket of every running Herdr session."""
+    result = runner([herdr, "session", "list", "--json"], check=True, capture_output=True, text=True, timeout=5)
+    return [session["socket_path"] for session in json.loads(result.stdout)["sessions"] if session.get("running")]
+
+
+def agent_panes(agent, runner=subprocess.run, herdr=None):
+    """Every live pane running an agent, in every Herdr session, with the socket and binary that reach it."""
+    herdr = herdr or herdr_bin()
+    found = []
+    for socket in herdr_sockets(herdr, runner):
+        server = {"herdr": herdr, "socket": socket}
+        found += [{**pane, **server} for pane in live_panes(server, runner).values() if pane.get("agent") == agent]
+    return found
+
+
+def discover(found, harness, provider_id, snapshot, runner=subprocess.run, now=None):
+    """Quota rows for every pane in `found` that has none yet, so an agent shows them before it reports a session."""
+    provider, pool = route({"harness": harness, "provider_id": provider_id})
+    for pane in found:
+        if registration_path(pane["pane_id"]).exists():
+            continue
+        entry = {"pane": pane["pane_id"], "socket": pane["socket"], "herdr": pane["herdr"], "harness": harness, "provider": provider, "pool": pool}
+        register(entry)
+        publish(entry, quota_tokens(provider, pool, snapshot, now), runner)
+
+
+def keep_quota(entry, runner=subprocess.run):
+    """Forget a pane's session and drop its details; its quota rows stay."""
+    entry = {key: entry[key] for key in ("pane", "socket", "herdr", "harness", "provider", "pool")}
+    register(entry)
+    publish(entry, dict.fromkeys(META_TOKENS), runner)
+    return entry
+
+
+def refresh_panes(snapshot, runner=subprocess.run, now=None, still_shown=None):
+    """Update quota rows in every registered pane; forget closed panes and replaced agents.
+
+    `still_shown(entry, pane)` checks panes that Codex's shared app server reported for, where Herdr's session binding is not the pane's.
+    """
+    def shown(entry, pane):
+        if entry.get("shared"):
+            return still_shown is None or still_shown(entry, pane)
+        return (pane.get("agent_session") or {}).get("value") == entry["session"]
+
     failed = 0
     servers = {}
     for path in PANES_DIR.glob("*.json"):
@@ -211,10 +266,12 @@ def refresh_panes(snapshot, runner=subprocess.run, now=None):
             agents = servers[entry["socket"]]
             if entry["pane"] not in agents:
                 path.unlink(missing_ok=True)  # Pane closed; pane IDs are never reused.
-            elif agents[entry["pane"]].get("agent") != HARNESSES[entry["harness"]] or entry.get("session") and (agents[entry["pane"]].get("agent_session") or {}).get("value") != entry["session"]:
+            elif agents[entry["pane"]].get("agent") != HARNESSES[entry["harness"]] or entry.get("session") and not entry.get("shared") and not shown(entry, agents[entry["pane"]]):
                 path.unlink(missing_ok=True)  # Another program took over the pane: remove our rows.
                 publish(entry, dict.fromkeys(QUOTA_TOKENS + META_TOKENS), runner, remove=True)
             else:
+                if entry.get("session") and not shown(entry, agents[entry["pane"]]):
+                    entry = keep_quota(entry, runner)  # Codex moved to another thread in the pane.
                 publish(entry, quota_tokens(entry["provider"], entry["pool"], snapshot, now), runner)
         except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
             failed += 1  # An unreachable server is retried on the next refresh.

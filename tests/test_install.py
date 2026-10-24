@@ -114,15 +114,6 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(after.pop(grok), before.pop(grok))
         self.assertEqual({path: json.loads(text) for path, text in after.items()}, {path: json.loads(text) for path, text in before.items()})
 
-    def test_detects_the_codex_daemon(self):
-        pid_file = self.home / ".codex/app-server-daemon/daemon.pid"
-        self.assertFalse(install.codex_daemon_running(self.home))
-        pid_file.parent.mkdir(parents=True)
-        pid_file.write_text(json.dumps({"pid": os.getpid()}))
-        self.assertTrue(install.codex_daemon_running(self.home))
-        pid_file.write_text("not json")
-        self.assertFalse(install.codex_daemon_running(self.home))
-
     def test_custom_codex_home_is_the_only_codex_target(self):
         directory = self.home / "isolated codex"
         directory.mkdir()
@@ -132,11 +123,9 @@ class InstallTests(unittest.TestCase):
             paths = {path for path, _, _ in changes}
             self.assertIn(directory / "hooks.json", paths)
             self.assertIn(directory / "config.toml", paths)
-            self.assertIn(directory / "herdr-codexbar.json", paths)
             self.assertNotIn(self.home / ".codex/hooks.json", paths)
             install.setup()
             self.assertEqual(install.plan(self.home, BIN)[0], [])
-            self.assertEqual(json.loads((directory / "herdr-codexbar.json").read_text()), {"command": BIN})
             self.assertTrue(tomllib.loads((directory / "config.toml").read_text())["features"]["hooks"])
             install.uninstall()
             self.assertEqual(list(directory.iterdir()), [])
@@ -149,55 +138,42 @@ class InstallTests(unittest.TestCase):
         (self.home / ".codex").rmdir()
         with mock.patch.dict(os.environ, CODEX_HOME=str(directory)):
             self.assertIn("codex", install.installed(self.home))
-            pid_file = directory / "app-server-daemon/daemon.pid"
-            pid_file.parent.mkdir()
-            pid_file.write_text(json.dumps({"pid": os.getpid()}))
-            self.assertTrue(install.codex_daemon_running(self.home))
 
     def test_codex_setup_preserves_settings_and_refuses_disabled_hooks(self):
         path = self.home / ".codex/config.toml"
         original = '# User settings\nmodel = "example"\n[features]\nother = true # keep\n'
         path.write_text(original)
-        changes = install.codex_config(self.home, BIN)
+        changes = install.codex_config(self.home)
         install.write(changes, self.home)
         self.assertIn('other = true # keep', path.read_text())
-        install.write(install.codex_config(self.home, BIN, remove=True), self.home)
+        install.write(install.codex_config(self.home, remove=True), self.home)
         self.assertEqual(path.read_text(), original)
         path.write_text('[features]\nhooks = false\n')
         with self.assertRaises(install.Conflict):
-            install.codex_config(self.home, BIN)
+            install.codex_config(self.home)
         self.assertEqual(path.read_text(), '[features]\nhooks = false\n')
 
     def test_uninstall_keeps_user_owned_hook_setting(self):
         path = self.home / ".codex/config.toml"
         path.write_text('[features]\nhooks = true # user setting\n')
-        install.write(install.codex_config(self.home, BIN), self.home)
-        install.write(install.codex_config(self.home, BIN, remove=True), self.home)
+        install.write(install.codex_config(self.home), self.home)
+        install.write(install.codex_config(self.home, remove=True), self.home)
         self.assertEqual(path.read_text(), '[features]\nhooks = true # user setting\n')
 
     def test_uninstall_keeps_preexisting_empty_features_table_and_comments(self):
         path = self.home / ".codex/config.toml"
         original = '# User settings\n[features]\n# Keep this comment\n'
         path.write_text(original)
-        install.write(install.codex_config(self.home, BIN), self.home)
-        install.write(install.codex_config(self.home, BIN, remove=True), self.home)
+        install.write(install.codex_config(self.home), self.home)
+        install.write(install.codex_config(self.home, remove=True), self.home)
         self.assertEqual(path.read_text(), original)
 
-    def test_bridge_diagnostics_validate_the_active_descriptor(self):
-        directory = self.home / "bot"
-        directory.mkdir()
-        descriptor = directory / "herdr-codexbar.json"
-        with mock.patch.dict(os.environ, CODEX_HOME=str(directory)):
-            self.assertFalse(install.codex_bridge_installed(self.home))
-            descriptor.write_text("not JSON")
-            self.assertFalse(install.codex_bridge_installed(self.home))
-            descriptor.write_text(json.dumps({"command": "/missing/command"}))
-            self.assertFalse(install.codex_bridge_installed(self.home))
-            command = directory / "sidebar"
-            command.write_text("#!/bin/sh\nexit 0\n")
-            command.chmod(0o755)
-            descriptor.write_text(json.dumps({"command": str(command)}))
-            self.assertTrue(install.codex_bridge_installed(self.home))
+    def test_setup_removes_the_old_descriptor(self):
+        descriptor = self.home / ".codex/herdr-codexbar.json"
+        descriptor.write_text(json.dumps({"command": BIN}))
+        install.setup()
+        self.assertFalse(descriptor.exists())
+        self.assertEqual(install.plan(self.home, BIN)[0], [])
 
 
 if __name__ == "__main__":

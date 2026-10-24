@@ -10,7 +10,7 @@ import json
 import subprocess
 import sys
 
-from . import ISSUES_URL, __version__, codexbar, harnesses, install, panes, remote
+from . import ISSUES_URL, __version__, codexbar, daemon, harnesses, install, panes
 
 REPORT_KEYS = ("provider_id", "model", "effort", "context_used", "context_limit", "context_percent")
 
@@ -32,6 +32,9 @@ def hook(harness):
             if not payload.get("session_id"):
                 return 0
             data["session"] = payload["session_id"]
+            if daemon.runs_in_server():
+                daemon.report(payload["session_id"], payload.get("transcript_path"), data)
+                return 0
         panes.report(data)
     except Exception:  # noqa: BLE001 - never break the agent's status line or hook.
         pass
@@ -67,7 +70,14 @@ def refresh():
     except (OSError, ValueError, TypeError, subprocess.SubprocessError) as error:
         print(f"herdr-codexbar: CodexBar poll failed: {error}", file=sys.stderr)
         snapshot, status = codexbar.read_snapshot(), 1
-    if panes.refresh_panes(snapshot):
+    daemon.retry()
+    names, fresh = daemon.thread_names(), daemon.just_named()
+    if panes.refresh_panes(snapshot, still_shown=lambda entry, pane: daemon.still_shown(entry, pane, names, fresh)):
+        status = 1
+    try:
+        panes.discover(panes.agent_panes("codex", herdr=panes.recorded_herdr()), "codex", harnesses.codex_provider(), snapshot)
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError) as error:
+        print(f"herdr-codexbar: Codex panes: {panes.herdr_error(error)}", file=sys.stderr)
         status = 1
     return status
 
@@ -85,9 +95,6 @@ def main(argv=None):
     commands.add_parser("refresh", help="poll CodexBar now and update agent panes")
     hook_parser = commands.add_parser("hook", help="agent status-line or hook entrypoint (reads JSON on stdin)")
     hook_parser.add_argument("harness", choices=sorted(harnesses.PARSERS))
-    remote_parser = commands.add_parser("codex-remote", help="terminal-side Codex sidebar connection (called by Agent Identity Launcher)")
-    remote_parser.add_argument("socket")
-    remote_parser.add_argument("args", nargs=argparse.REMAINDER)
     commands.add_parser("report", help="plugin entrypoint (reads a report as JSON on stdin)")
     clear_parser = commands.add_parser("clear", help="plugin exit entrypoint (removes the pane's rows)")
     clear_parser.add_argument("harness", choices=sorted(panes.HARNESSES))
@@ -107,12 +114,6 @@ def main(argv=None):
         status = clear(args.harness)
     elif args.command == "hook":
         status = hook(args.harness)
-    elif args.command == "codex-remote":
-        try:
-            status = remote.run(args.socket, args.args)
-        except (OSError, ValueError) as error:
-            print(f"herdr-codexbar: {error}", file=sys.stderr)
-            status = 1
     else:
         status = report()
     sys.exit(status)

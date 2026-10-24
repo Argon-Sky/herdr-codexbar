@@ -8,6 +8,7 @@ A Herdr add-on that shows, under each agent in the sidebar, which subscription i
 - `herdr_codexbar/install.py`: `check`, `setup` and `uninstall`. Wires each installed agent, Herdr's config and the launchd poller.
 - `herdr_codexbar/harnesses.py`: turns each agent's hook or status-line payload into a report.
 - `herdr_codexbar/panes.py`: routes each pane to a subscription by provider ID and publishes its sidebar tokens to Herdr.
+- `herdr_codexbar/daemon.py`: finds the panes that show a thread when Codex's shared app server runs its hooks.
 - `herdr_codexbar/codexbar.py`: reads quota from the CodexBar CLI into a small snapshot.
 - `herdr_codexbar/render.py`: text for the sidebar rows.
 - `herdr_codexbar/tomledit.py`: minimal edits to Herdr's `config.toml`.

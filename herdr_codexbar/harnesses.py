@@ -113,13 +113,15 @@ def antigravity(payload):
 
 
 def codex_transcript(path):
-    """Session provider, the newest turn_context, and the newest non-empty token_count info."""
-    provider = turn = usage = None
+    """Session facts from session_meta, the newest turn_context, and the newest non-empty token_count info."""
+    session = turn = usage = None
     try:
         with open(path, "rb") as source:
             first = json.loads(source.readline() or b"{}")
             if first.get("type") == "session_meta":
-                provider = (first.get("payload") or {}).get("model_provider")
+                meta = first.get("payload") or {}
+                # Only these fields: session_meta also holds account identifiers.
+                session = {key: meta.get(key) for key in ("model_provider", "originator", "thread_source", "cwd")}
             end = source.seek(0, os.SEEK_END)
             tail = b""
             while end > 0 and (turn is None or usage is None):
@@ -142,31 +144,44 @@ def codex_transcript(path):
                 end = start
     except (OSError, TypeError, ValueError, AttributeError):
         pass
-    return provider, turn or {}, usage or {}
+    return session or {}, turn or {}, usage or {}
+
+
+def codex_config(home):
+    try:
+        with (codex_home(home) / "config.toml").open("rb") as source:
+            return tomllib.load(source)
+    except (OSError, ValueError):
+        return {}
 
 
 def codex_effort(home):
     """The reasoning effort configured for Codex, used when the transcript has none."""
-    try:
-        with (codex_home(home) / "config.toml").open("rb") as source:
-            return tomllib.load(source).get("model_reasoning_effort")
-    except (OSError, ValueError):
-        return None
+    return codex_config(home).get("model_reasoning_effort")
+
+
+def codex_provider(home=None):
+    """The provider ID configured for Codex, used before a session reports its own."""
+    return codex_config(home or Path.home()).get("model_provider") or "openai"
 
 
 def codex(payload, home=None):
     """Codex hook payload; model and context come from the session transcript it points to."""
-    provider, turn, usage = codex_transcript(payload.get("transcript_path"))
+    session, turn, usage = codex_transcript(payload.get("transcript_path"))
     tokens = number((usage.get("last_token_usage") or {}).get("total_tokens"))
     window = number(usage.get("model_context_window"))
     return {
         "harness": "codex",
-        "provider_id": provider or "openai",
+        "provider_id": session.get("model_provider") or "openai",
         "model": turn.get("model") or payload.get("model"),
         "effort": turn.get("effort") or codex_effort(home or Path.home()),
         "context_used": tokens,
         "context_limit": window,
         "context_percent": codex_context_percent(tokens, window),
+        # Which pane shows the session, when Codex's shared app server runs its hooks (see daemon.py).
+        "originator": session.get("originator"),
+        "thread_source": session.get("thread_source"),
+        "cwd": session.get("cwd"),
     }
 
 
