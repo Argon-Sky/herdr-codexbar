@@ -3,7 +3,7 @@ import unittest
 
 from herdr_codexbar import codexbar
 
-from .helpers import NOW, snapshot
+from .helpers import NOW, fixture, snapshot
 
 
 class NormalizeTests(unittest.TestCase):
@@ -48,7 +48,7 @@ class NormalizeTests(unittest.TestCase):
         self.assertEqual([window["used"] for window in pools["gemini"]], [10.0, 20.0])
         self.assertFalse(pools["claude-gpt"][1]["known"])
 
-    def test_unsupported_providers_and_errors_are_skipped(self):
+    def test_unsupported_providers_are_skipped(self):
         self.assertNotIn("broken", self.providers)
         self.assertNotIn("unsupported-example", self.providers)
 
@@ -61,6 +61,19 @@ class NormalizeTests(unittest.TestCase):
         self.assertEqual(snapshot["providers"], {"opencodego": {"name": "OpenCode Go", "plan": "OpenCode Go", "pools": {}, "failed": True}})
         self.assertNotIn("HTTP 500", json.dumps(snapshot))
         self.assertNotIn("failed", self.providers["claude"])
+
+    def test_a_failed_record_never_replaces_a_read_one(self):
+        raw = fixture("codexbar-usage.json") + [{"provider": "claude", "error": {"kind": "provider"}}]
+        self.assertNotIn("failed", codexbar.normalize(raw, now=NOW)["providers"]["claude"])
+
+    def test_poll_writes_failed_providers_beside_read_ones_and_refuses_only_failures(self):
+        class Result:
+            stdout = json.dumps([{"provider": "opencodego", "error": {"kind": "provider"}}])
+        with self.assertRaises(ValueError):
+            codexbar.poll(lambda *args, **kwargs: Result())
+        Result.stdout = json.dumps(fixture("codexbar-usage.json")[:1] + [{"provider": "opencodego", "error": {"kind": "provider"}}])
+        providers = codexbar.poll(lambda *args, **kwargs: Result())["providers"]
+        self.assertEqual((sorted(providers), providers["opencodego"]["failed"]), (["claude", "opencodego"], True))
 
     def test_no_account_details_are_kept(self):
         text = json.dumps(snapshot())

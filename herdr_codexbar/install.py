@@ -500,7 +500,12 @@ def check():
     snapshot = codexbar.read_snapshot()
     for provider in enabled:
         data = (snapshot or {}).get("providers", {}).get(provider)
-        detail = f"{data['plan']}: {' '.join(window['label'] or '?' for pool in data['pools'].values() for window in pool)}" if data else "no quota yet"
+        if not data:
+            detail = "no quota yet"
+        elif data.get("failed"):
+            detail = f"{data['plan']}: quota unavailable, CodexBar could not read it"
+        else:
+            detail = f"{data['plan']}: {' '.join(window['label'] or '?' for pool in data['pools'].values() for window in pool)}"
         print(f"      {provider:<12} {detail}")
 
     harnesses = installed(home)

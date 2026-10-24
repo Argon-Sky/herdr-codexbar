@@ -115,7 +115,7 @@ def normalize(raw, names=None, now=None):
         if not isinstance(usage, dict):
             # CodexBar lists only enabled providers; one it could not read is kept as failed, without its error text.
             if record.get("error"):
-                providers[provider] = {"name": names.get(provider) or provider, "plan": plan_name(provider, None, names.get(provider)), "pools": {}, "failed": True}
+                providers.setdefault(provider, {"name": names.get(provider) or provider, "plan": plan_name(provider, None, names.get(provider)), "pools": {}, "failed": True})
             continue
         pools = {}
         if provider == "antigravity":
