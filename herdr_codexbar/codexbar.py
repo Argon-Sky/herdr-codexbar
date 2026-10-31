@@ -158,11 +158,13 @@ def normalize(raw, names=None, now=None):
 
 def poll(runner=subprocess.run):
     raw = run_json(["usage", "--provider", "", "--json"], runner)
+    # CodexBar counts etaSeconds from its answer, so the snapshot is dated then, not after the names below.
+    now = datetime.now(timezone.utc)
     try:
         names = {entry["provider"]: entry.get("displayName") for entry in run_json(["config", "providers", "--json"], runner)}
     except (OSError, ValueError, TypeError, KeyError, subprocess.SubprocessError):
         names = {}
-    snapshot = normalize(raw, names)
+    snapshot = normalize(raw, names, now)
     if not any(provider["pools"] for provider in snapshot["providers"].values()):
         raise ValueError("CodexBar returned no quota windows; the previous snapshot is kept")
     write_json(SNAPSHOT, snapshot)
