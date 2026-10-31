@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 
-__version__ = "0.3.3"
+__version__ = "0.3.4"
 
 ISSUES_URL = "https://github.com/Argon-Sky/herdr-codexbar/issues"
 # Private runtime state: the quota snapshot and pane registrations.
