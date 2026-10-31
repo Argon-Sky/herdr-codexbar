@@ -263,6 +263,22 @@ class CreditTests(unittest.TestCase):
         self.assertEqual(expiry("Expires Jan 2 at 9:00\u202fAM", datetime(2026, 12, 30, 12, 0, tzinfo=timezone.utc)), "2027-01-01T23:00:00+00:00")
         self.assertEqual(expiry("Expires Jan 9 at 9:00\u202fAM"), "2027-01-08T23:00:00+00:00", "a month and day already past this year is next year's")
 
+    def test_limit_reset_words_count_from_when_codexbar_wrote_them(self):
+        def entries(secondary, updated, read):
+            usage = {"details": [{"rows": [{"label": "Limit Reset Credits", "value": "1 available", "secondaryValue": secondary}]}]}
+            if updated is not None:
+                usage["updatedAt"] = updated
+            return [entry["expiresAt"] for entry in self.read(usage, read)]
+        # Written at 23:59:50 in Warsaw and read 15 seconds later, on the next day: CodexBar's tomorrow starts now, and its today has ended.
+        written, read = "2026-01-10T22:59:50Z", datetime(2026, 1, 10, 23, 0, 5, tzinfo=timezone.utc)
+        self.assertEqual(entries("Expires tomorrow, 1:00\u202fAM", written, read), [])
+        self.assertEqual(entries("Expires 11:59\u202fPM", written, read), [])
+        # Without its updatedAt, or with one that cannot be read, the words count from the poll, a day late across midnight.
+        self.assertEqual(entries("Expires tomorrow, 1:00\u202fAM", None, read), ["2026-01-11T23:00:00+00:00"])
+        self.assertEqual(entries("Expires 11:59\u202fPM", "yesterday", read), ["2026-01-11T22:59:00+00:00"])
+        # Any other time of day, either way gives the same day.
+        self.assertEqual(entries("Expires tomorrow, 1:00\u202fAM", "2026-01-10T10:59:30Z", NOW), ["2026-01-10T23:00:00+00:00"])
+
     def test_limit_reset_rows(self):
         self.assertEqual(self.resets("3 available"), [{"kind": "reset", "count": 3, "expiresAt": None}])
         self.assertEqual(self.resets("0 available"), [])

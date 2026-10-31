@@ -39,7 +39,6 @@ RESET_LABEL = "Limit Reset Credits"
 MONTHS = {name: number for number, names in enumerate(
     (("jan", "january"), ("feb", "february"), ("mar", "march"), ("apr", "april"), ("may",), ("jun", "june"),
      ("jul", "july"), ("aug", "august"), ("sep", "sept", "september"), ("oct", "october"), ("nov", "november"), ("dec", "december")), 1) for name in names}
-CLOCK = re.compile(r"(\d{1,2}):(\d{2})(?: ?([ap])\.?m\.?)?")
 
 
 def executable():
@@ -139,7 +138,7 @@ def local_time(day, hour=0, minute=0):
 
 
 def reset_expiry(text, now):
-    """When a limit reset row's `Expires ...` runs out, read best effort; None when it cannot be read.
+    """When a limit reset row's `Expires ...` runs out, read best effort against `now`, when CodexBar wrote it; None when it cannot be read.
 
     The CLI writes it in en_US_POSIX on the Mac's clock (UsageFormatter.resetDescription): `6:40 PM` today, `tomorrow, 6:40 PM`, `Nov 6 at 6:40 PM` later, without a year.
     The day is today (a bare time or `today`), `tomorrow`, or the next English month and day, in either order, on or after today. The expiry is the start of that day, so the warning comes early rather than late, except today, whose start has passed: today is read at its time and is unreadable without one.
@@ -219,6 +218,8 @@ def credits(usage, now):
             if unknown:
                 add("reset", None, unreadable=True, count=unknown)
 
+    # CodexBar words a limit reset's expiry against the record's updatedAt, so a poll across midnight reads today and tomorrow as it meant them.
+    written = instant(usage.get("updatedAt")) or now
     sections = usage.get("details")
     rows = [row for section in (sections if isinstance(sections, list) else []) if isinstance(section, dict) and isinstance(section.get("rows"), list)
             for row in section["rows"] if isinstance(row, dict)]
@@ -240,7 +241,7 @@ def credits(usage, now):
                 add("reset", None, unreadable=True)
                 continue
             count = int(match[1])
-            expiry = reset_expiry(secondary, now) if isinstance(secondary, str) else None
+            expiry = reset_expiry(secondary, written) if isinstance(secondary, str) else None
             if count == 0 or (expiry and expiry <= now):
                 continue
             add("reset", expiry, unreadable=secondary is not None and expiry is None, count=count)
