@@ -184,8 +184,8 @@ class CreditTests(unittest.TestCase):
             {"kind": "cloud", "amount": 248.526216, "currency": "USD", "expiresAt": "2026-01-15T07:59:00+00:00"},
             {"kind": "reset", "count": 1, "expiresAt": None},
         ])
-        # "tomorrow, 1:00 AM" from 13:00 in Warsaw: the start of 11 January there.
-        self.assertEqual(providers["grok"]["credits"], [{"kind": "reset", "count": 2, "expiresAt": "2026-01-10T23:00:00+00:00"}])
+        # "tomorrow, 1:00 AM" from 13:00 in Warsaw: 1:00 on 11 January there.
+        self.assertEqual(providers["grok"]["credits"], [{"kind": "reset", "count": 2, "expiresAt": "2026-01-11T00:00:00+00:00"}])
 
     def test_nothing_else_is_a_credit(self):
         providers = snapshot()["providers"]
@@ -250,18 +250,30 @@ class CreditTests(unittest.TestCase):
         def expiry(secondary, now=NOW):
             (entry,) = self.resets("1 available", secondary, now)
             return entry["expiresAt"]
-        # The CLI's en_US_POSIX forms (UsageFormatter.resetDescription): today at its time, tomorrow and later from the start of that day in Warsaw.
+        # The CLI's en_US_POSIX forms (UsageFormatter.resetDescription), each at the written time on that day in Warsaw.
         self.assertEqual(expiry("Expires 6:40\u202fPM"), "2026-01-10T17:40:00+00:00")
-        self.assertEqual(expiry("Expires tomorrow, 1:00\u202fAM"), "2026-01-10T23:00:00+00:00")
-        self.assertEqual(expiry("Expires Jan 16 at 4:40\u202fPM"), "2026-01-15T23:00:00+00:00")
+        self.assertEqual(expiry("Expires tomorrow, 1:00\u202fAM"), "2026-01-11T00:00:00+00:00")
+        self.assertEqual(expiry("Expires tomorrow, 6:40\u202fPM"), "2026-01-11T17:40:00+00:00")
+        self.assertEqual(expiry("Expires Jan 16 at 4:40\u202fPM"), "2026-01-16T15:40:00+00:00")
+        self.assertEqual(expiry("Expires Nov 6 at 6:40\u202fPM"), "2026-11-06T17:40:00+00:00")
+        self.assertEqual(expiry("Expires Jan 12 at 12:05\u202fAM"), "2026-01-11T23:05:00+00:00")
+        self.assertEqual(expiry("Expires Jan 12 at 12:30\u202fPM"), "2026-01-12T11:30:00+00:00")
         # The owner's words too: today, either order, full month names, any case, 24-hour times.
         self.assertEqual(expiry("Expires today, 11:30 pm"), "2026-01-10T22:30:00+00:00")
+        self.assertEqual(expiry("Expires 6 Nov 18:40"), "2026-11-06T17:40:00+00:00")
+        self.assertEqual(expiry("Expires SEPT 3, 16:40"), "2026-09-03T14:40:00+00:00")
+        # A day written without a time runs from its start.
+        self.assertEqual(expiry("Expires tomorrow"), "2026-01-10T23:00:00+00:00")
+        self.assertEqual(expiry("Expires Nov 6"), "2026-11-05T23:00:00+00:00")
         self.assertEqual(expiry("Expires 16 january"), "2026-01-15T23:00:00+00:00")
-        self.assertEqual(expiry("Expires SEPT 3, 16:40"), "2026-09-02T22:00:00+00:00")
         # Past daylight saving time and into next year.
-        self.assertEqual(expiry("Expires Mar 30 at 9:00\u202fAM"), "2026-03-29T22:00:00+00:00")
-        self.assertEqual(expiry("Expires Jan 2 at 9:00\u202fAM", datetime(2026, 12, 30, 12, 0, tzinfo=timezone.utc)), "2027-01-01T23:00:00+00:00")
-        self.assertEqual(expiry("Expires Jan 9 at 9:00\u202fAM"), "2027-01-08T23:00:00+00:00", "a month and day already past this year is next year's")
+        self.assertEqual(expiry("Expires Mar 30 at 9:00\u202fAM"), "2026-03-30T07:00:00+00:00")
+        self.assertEqual(expiry("Expires Jan 2 at 9:00\u202fAM", datetime(2026, 12, 30, 12, 0, tzinfo=timezone.utc)), "2027-01-02T08:00:00+00:00")
+        self.assertEqual(expiry("Expires Jan 9 at 9:00\u202fAM"), "2027-01-09T08:00:00+00:00", "a month and day already past this year is next year's")
+        # On its last day a credit is still there after midnight, until its written time.
+        last_day = datetime(2026, 1, 15, 23, 30, tzinfo=timezone.utc)
+        self.assertEqual(expiry("Expires Jan 16 at 4:40\u202fPM", last_day), "2026-01-16T15:40:00+00:00")
+        self.assertEqual(expiry("Expires 4:40\u202fPM", last_day), "2026-01-16T15:40:00+00:00")
 
     def test_limit_reset_words_count_from_when_codexbar_wrote_them(self):
         def entries(secondary, updated, read):
@@ -269,15 +281,15 @@ class CreditTests(unittest.TestCase):
             if updated is not None:
                 usage["updatedAt"] = updated
             return [entry["expiresAt"] for entry in self.read(usage, read)]
-        # Written at 23:59:50 in Warsaw and read 15 seconds later, on the next day: CodexBar's tomorrow starts now, and its today has ended.
+        # Written at 23:59:50 in Warsaw and read 15 seconds later, on the next day: CodexBar's tomorrow is now today, still usable until 1:00, and its today has ended.
         written, read = "2026-01-10T22:59:50Z", datetime(2026, 1, 10, 23, 0, 5, tzinfo=timezone.utc)
-        self.assertEqual(entries("Expires tomorrow, 1:00\u202fAM", written, read), [])
+        self.assertEqual(entries("Expires tomorrow, 1:00\u202fAM", written, read), ["2026-01-11T00:00:00+00:00"])
         self.assertEqual(entries("Expires 11:59\u202fPM", written, read), [])
         # Without its updatedAt, or with one that cannot be read, the words count from the poll, a day late across midnight.
-        self.assertEqual(entries("Expires tomorrow, 1:00\u202fAM", None, read), ["2026-01-11T23:00:00+00:00"])
+        self.assertEqual(entries("Expires tomorrow, 1:00\u202fAM", None, read), ["2026-01-12T00:00:00+00:00"])
         self.assertEqual(entries("Expires 11:59\u202fPM", "yesterday", read), ["2026-01-11T22:59:00+00:00"])
         # Any other time of day, either way gives the same day.
-        self.assertEqual(entries("Expires tomorrow, 1:00\u202fAM", "2026-01-10T10:59:30Z", NOW), ["2026-01-10T23:00:00+00:00"])
+        self.assertEqual(entries("Expires tomorrow, 1:00\u202fAM", "2026-01-10T10:59:30Z", NOW), ["2026-01-11T00:00:00+00:00"])
 
     def test_limit_reset_rows(self):
         self.assertEqual(self.resets("3 available"), [{"kind": "reset", "count": 3, "expiresAt": None}])
@@ -287,7 +299,10 @@ class CreditTests(unittest.TestCase):
         for value in ("available", "1 left", "one available", 2, None):
             self.assertEqual(self.resets(value, "Expires tomorrow, 1:00\u202fAM"), [{"kind": "reset", "expiresAt": None, "unreadable": True}], value)
         # A date in another language or form keeps its count, marked unreadable.
-        for secondary in ("Expires morgen, 13:00", "Expires 11 lis", "Expires Nov 31", "Expires Smarch 3", "Expires 13:00\u202fPM", "Expires 9:75", "Expires today", "Expires", "", "Renews 6 Nov"):
+        for secondary in ("Expires morgen, 13:00", "Expires 11 lis", "Expires Nov 31", "Expires Smarch 3", "Expires 13:00\u202fPM", "Expires 9:75", "Expires", "", "Renews 6 Nov"):
+            self.assertEqual(self.resets("2 available", secondary), [{"kind": "reset", "count": 2, "expiresAt": None, "unreadable": True}], secondary)
+        # Today without a time, in either form: its start has passed, so reading it would drop a usable credit.
+        for secondary in ("Expires today", "Expires Jan 10"):
             self.assertEqual(self.resets("2 available", secondary), [{"kind": "reset", "count": 2, "expiresAt": None, "unreadable": True}], secondary)
 
     def test_order_skipped_shapes_and_failed_providers(self):
@@ -295,7 +310,7 @@ class CreditTests(unittest.TestCase):
                  "details": ["row", {"rows": "x"}, {"title": "no rows"}, {"rows": [7, {"label": "Limit Reset Credits", "value": "1 available", "secondaryValue": "Expires tomorrow, 1:00\u202fAM"},
                                                                                      {"id": "claude-cloud-credits", "value": "?"}]}]}
         self.assertEqual([(entry["kind"], entry["expiresAt"], entry.get("unreadable", False)) for entry in self.read(usage)], [
-            ("cloud", None, True), ("reset", "2026-01-10T23:00:00+00:00", False), ("reset", "2026-01-20T00:00:00+00:00", False), ("reset", None, False)])
+            ("cloud", None, True), ("reset", "2026-01-11T00:00:00+00:00", False), ("reset", "2026-01-20T00:00:00+00:00", False), ("reset", None, False)])
         self.assertEqual(self.read({"details": {"rows": []}}), [])
         raw = [{"provider": "claude", "error": {"kind": "provider"}, "usage": None, "details": [{"rows": [{"label": "Limit Reset Credits", "value": "1 available"}]}]}]
         self.assertNotIn("credits", codexbar.normalize(raw, now=NOW)["providers"]["claude"])

@@ -141,7 +141,7 @@ def reset_expiry(text, now):
     """When a limit reset row's `Expires ...` runs out, read best effort against `now`, when CodexBar wrote it; None when it cannot be read.
 
     The CLI writes it in en_US_POSIX on the Mac's clock (UsageFormatter.resetDescription): `6:40 PM` today, `tomorrow, 6:40 PM`, `Nov 6 at 6:40 PM` later, without a year.
-    The day is today (a bare time or `today`), `tomorrow`, or the next English month and day, in either order, on or after today. The expiry is the start of that day, so the warning comes early rather than late, except today, whose start has passed: today is read at its time and is unreadable without one.
+    The day is today (a bare time or `today`), `tomorrow`, or the next English month and day, in either order, on or after today. The expiry is the written time on that day on the Mac's clock, or the start of that day when no time is written, except today, whose start has passed: today is unreadable without a time.
     """
     words = " ".join(text.replace(" ", " ").replace(" ", " ").split()).lower()
     words = words.removeprefix("expires ").strip()
@@ -179,9 +179,9 @@ def reset_expiry(text, now):
                 break
         if day is None:
             return None
-    if day == today:
-        return local_time(day, *clock) if clock else None
-    return local_time(day)
+    if clock:
+        return local_time(day, *clock)
+    return None if day == today else local_time(day)
 
 
 def credits(usage, now):
