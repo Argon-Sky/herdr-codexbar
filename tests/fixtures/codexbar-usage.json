@@ -28,7 +28,7 @@
       "accountEmail": "someone@example.com",
       "loginMethod": "plus"
     },
-    "pace": { "secondary": { "deltaPercent": 30, "stage": "behind", "summary": "30% in deficit" } }
+    "pace": { "secondary": { "deltaPercent": 30, "stage": "behind", "summary": "30% in deficit | Runs out in 2h 30m", "willLastToReset": false, "etaSeconds": 9000 } }
   },
   {
     "provider": "antigravity",
