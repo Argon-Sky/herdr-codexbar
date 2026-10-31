@@ -97,7 +97,7 @@ brew uninstall herdr-codexbar
 ## Privacy
 
 - Everything stays on your Mac. herdr-codexbar makes no network requests; CodexBar does the fetching.
-- It keeps a small snapshot in `~/.cache/herdr-codexbar` (readable only by you) with plan names, percentages, reset times and CodexBar's estimate of when a window runs out. Account emails, organizations and raw CodexBar output are never stored or logged.
+- It keeps a small snapshot in `~/.cache/herdr-codexbar` (readable only by you) with plan names, percentages, reset times, CodexBar's estimate of when a window runs out, and the free limit resets and cloud credits you can still use with when they expire. Account emails, organizations, credit ids and raw CodexBar output are never stored or logged.
 - It reads agent settings to wire them, and each session's own status-line or hook data (model, effort, context) to display it.
 
 ## Troubleshooting
