@@ -1,15 +1,16 @@
 """Read quota from the CodexBar CLI into a small private snapshot.
 
-Only windows, plan names, pace and CodexBar's run-out estimate are kept: no account identifiers, emails or raw CodexBar output are stored or logged.
+Only windows, plan names, pace, CodexBar's run-out estimate and usable credits with their expiry are kept: no account identifiers, emails or raw CodexBar output are stored or logged.
 """
 
 import json
 import math
 import os
+import re
 import shutil
 import subprocess
 import tempfile
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from numbers import Real
 
 from . import STATE_DIR
@@ -32,6 +33,12 @@ AGY_POOLS = {
 }
 # Brand to put before a bare tier name ("plus" -> "ChatGPT Plus"); the default is the display name.
 BRANDS = {"codex": "ChatGPT"}
+# CodexBar's own constants for the credit sources: ClaudeCloudCreditsSnapshot.detailRowID and the label of Claude's and Grok's limit reset rows.
+CLOUD_ROW = "claude-cloud-credits"
+RESET_LABEL = "Limit Reset Credits"
+MONTHS = {name: number for number, names in enumerate(
+    (("jan", "january"), ("feb", "february"), ("mar", "march"), ("apr", "april"), ("may",), ("jun", "june"),
+     ("jul", "july"), ("aug", "august"), ("sep", "sept", "september"), ("oct", "october"), ("nov", "november"), ("dec", "december")), 1) for name in names}
 
 
 def executable():
@@ -114,6 +121,135 @@ def plan_name(provider, login_method, display_name):
     return f"{BRANDS.get(provider, display)} {tier}"
 
 
+def instant(value):
+    """An ISO 8601 time with a zone, as UTC; None for anything else."""
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return parsed.astimezone(timezone.utc) if parsed.tzinfo else None
+
+
+def local_time(day, hour=0, minute=0):
+    """That day and time on the Mac's clock, as UTC; a naive datetime takes the Mac's zone with its daylight saving on that day."""
+    return datetime(day.year, day.month, day.day, hour, minute).astimezone(timezone.utc)
+
+
+def reset_expiry(text, now):
+    """When a limit reset row's `Expires ...` runs out, read best effort against `now`, when CodexBar wrote it; None when it cannot be read.
+
+    The CLI writes it in en_US_POSIX on the Mac's clock (UsageFormatter.resetDescription): `6:40 PM` today, `tomorrow, 6:40 PM`, `Nov 6 at 6:40 PM` later, without a year.
+    The day is today (a bare time or `today`), `tomorrow`, or the next English month and day, in either order, on or after today. The expiry is the start of that day, so the warning comes early rather than late, except today, whose start has passed: today is read at its time and is unreadable without one.
+    """
+    words = " ".join(text.replace(" ", " ").replace(" ", " ").split()).lower()
+    words = words.removeprefix("expires ").strip()
+    clock = None
+    match = re.search(r"(?:^|[ ,])(?:at )?(\d{1,2}):(\d{2})(?: ?([ap])\.?m\.?)?$", words)
+    if match:
+        hour, minute, half = int(match[1]), int(match[2]), match[3]
+        if half:
+            if not 1 <= hour <= 12:
+                return None
+            hour = hour % 12 + (12 if half == "p" else 0)
+        if hour > 23 or minute > 59:
+            return None
+        clock = (hour, minute)
+        words = words[:match.start()].strip(" ,")
+    today = now.astimezone().date()
+    if words in ("", "today"):
+        day = today
+    elif words == "tomorrow":
+        day = today + timedelta(days=1)
+    else:
+        parts = re.fullmatch(r"([a-z]+)\.? (\d{1,2})|(\d{1,2})\.? ([a-z]+)\.?", words)
+        month = parts and MONTHS.get(parts[1] or parts[4])
+        if not month:
+            return None
+        number_of_day = int(parts[2] or parts[3])
+        day = None
+        for year in (today.year, today.year + 1):
+            try:
+                candidate = date(year, month, number_of_day)
+            except ValueError:
+                continue
+            if candidate >= today:
+                day = candidate
+                break
+        if day is None:
+            return None
+    if day == today:
+        return local_time(day, *clock) if clock else None
+    return local_time(day)
+
+
+def credits(usage, now):
+    """The provider's credits still usable at `now`, from CodexBar's three credit sources; nothing else in the record is read.
+
+    Codex's `codexResetCredits` counts credits `available` and not expired, CodexBar's own inventory rule; Claude's cloud credits row (`claude-cloud-credits`) is read as CodexBar's `detailStatus` reads it back, its balance in US dollars; Claude's and Grok's `Limit Reset Credits` rows give a count and only the soonest expiry. A source that is present but cannot be read gives an unreadable entry, never nothing. Unreadable entries come first, then the soonest expiry, then none.
+    """
+    found = []  # (expiry, entry)
+
+    def add(kind, expiry, unreadable=False, **values):
+        entry = {"kind": kind, **values, "expiresAt": expiry.isoformat() if expiry else None}
+        if unreadable:
+            entry["unreadable"] = True
+        found.append((expiry, entry))
+
+    if usage.get("codexResetCredits") is not None:
+        block = usage["codexResetCredits"]
+        items = block.get("credits") if isinstance(block, dict) else None
+        if not isinstance(items, list) or not all(isinstance(item, dict) and isinstance(item.get("status"), str) for item in items):
+            add("reset", None, unreadable=True)
+        else:
+            counts, unknown = {}, 0
+            for item in items:
+                if item["status"] != "available":
+                    continue
+                raw = item.get("expires_at")
+                expiry = instant(raw)
+                if raw is not None and expiry is None:
+                    unknown += 1
+                elif expiry is None or expiry > now:
+                    counts[expiry] = counts.get(expiry, 0) + 1
+            for expiry, count in counts.items():
+                add("reset", expiry, count=count)
+            if unknown:
+                add("reset", None, unreadable=True, count=unknown)
+
+    # CodexBar words a limit reset's expiry against the record's updatedAt, so a poll across midnight reads today and tomorrow as it meant them.
+    written = instant(usage.get("updatedAt")) or now
+    sections = usage.get("details")
+    rows = [row for section in (sections if isinstance(sections, list) else []) if isinstance(section, dict) and isinstance(section.get("rows"), list)
+            for row in section["rows"] if isinstance(row, dict)]
+    for row in rows:
+        secondary = row.get("secondaryValue")
+        if row.get("id") == CLOUD_ROW:
+            expiry = instant(secondary.split(" ")[-1]) if isinstance(secondary, str) else None
+            amount = number(row.get("usageValue"))
+            if row.get("value") == "Expired" or (expiry and expiry <= now) or (row.get("usageValue") is None and row.get("value") == "Unavailable"):
+                continue
+            if amount is None or not math.isfinite(amount) or amount < 0:
+                add("cloud", None, unreadable=True)
+            elif amount > 0:
+                add("cloud", expiry, unreadable=secondary is not None and expiry is None, amount=amount, currency="USD")
+        elif row.get("label") == RESET_LABEL:
+            value = row.get("value")
+            match = re.fullmatch(r"(\d+) available", value) if isinstance(value, str) else None
+            if not match:
+                add("reset", None, unreadable=True)
+                continue
+            count = int(match[1])
+            expiry = reset_expiry(secondary, written) if isinstance(secondary, str) else None
+            if count == 0 or (expiry and expiry <= now):
+                continue
+            add("reset", expiry, unreadable=secondary is not None and expiry is None, count=count)
+
+    found.sort(key=lambda item: ("unreadable" not in item[1], item[0] is None, item[0] or now))
+    return [entry for _, entry in found]
+
+
 def normalize(raw, names=None, now=None):
     if not isinstance(raw, list):
         raise TypeError("CodexBar output must be an array")
@@ -153,6 +289,9 @@ def normalize(raw, names=None, now=None):
             "plan": plan_name(provider, usage.get("loginMethod"), names.get(provider)),
             "pools": pools,
         }
+        usable = credits(usage, now)
+        if usable:
+            providers[provider]["credits"] = usable
     return {"updatedAt": now.isoformat(), "providers": providers}
 
 

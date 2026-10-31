@@ -10,7 +10,14 @@
       "accountEmail": "someone@example.com",
       "accountOrganization": "Example Org",
       "loginMethod": "Claude Pro",
-      "identity": { "loginMethod": "Claude Pro", "providerID": "claude", "accountEmail": "someone@example.com" }
+      "identity": { "loginMethod": "Claude Pro", "providerID": "claude", "accountEmail": "someone@example.com" },
+      "providerCost": { "used": 0, "limit": 50, "currencyCode": "USD", "period": "Monthly" },
+      "details": [
+        { "title": "Cloud credits", "rows": [
+          { "id": "claude-cloud-credits", "label": "Cloud credits", "value": "$248.53 of $250.00 remaining", "secondaryValue": "Expires 2026-01-15T07:59:00Z", "progress": { "used": 1.473784, "total": 250 }, "usageValue": 248.526216 }
+        ] },
+        { "rows": [ { "label": "Limit Reset Credits", "value": "1 available" } ] }
+      ]
     },
     "pace": {
       "primary": { "deltaPercent": -25, "stage": "ahead", "summary": "25% in reserve", "expectedUsedPercent": 30, "willLastToReset": true },
@@ -26,8 +33,22 @@
       "secondary": { "windowMinutes": 10080, "resetsAt": "2026-01-12T12:00:00Z", "usedPercent": 100 },
       "tertiary": null,
       "accountEmail": "someone@example.com",
-      "loginMethod": "plus"
+      "loginMethod": "plus",
+      "providerCost": { "used": 0, "limit": 0, "currencyCode": "USD" },
+      "codexResetCredits": {
+        "availableCount": 9,
+        "updatedAt": "2026-01-10T12:00:00Z",
+        "credits": [
+          { "id": "codex-reset-credit-v1-0123456789abcdef", "reset_type": "full", "status": "available", "granted_at": "2026-01-01T00:00:00Z", "expires_at": "2026-01-16T22:07:17Z", "title": "Example reset gift", "description": "A free reset for someone@example.com" },
+          { "id": "codex-reset-credit-v1-1123456789abcdef", "reset_type": "full", "status": "available", "granted_at": "2026-01-01T00:00:00Z", "title": "Example reset gift" },
+          { "id": "codex-reset-credit-v1-2123456789abcdef", "reset_type": "full", "status": "redeemed", "granted_at": "2026-01-01T00:00:00Z", "expires_at": "2026-01-16T22:07:17Z", "redeemed_at": "2026-01-05T00:00:00Z" },
+          { "id": "codex-reset-credit-v1-3123456789abcdef", "reset_type": "full", "status": "available", "granted_at": "2025-12-01T00:00:00Z", "expires_at": "2026-01-09T00:00:00Z" },
+          { "id": "codex-reset-credit-v1-4123456789abcdef", "reset_type": "full", "status": "available", "granted_at": "2026-01-02T00:00:00Z", "expires_at": "2026-01-20T10:00:00Z" },
+          { "id": "codex-reset-credit-v1-5123456789abcdef", "reset_type": "full", "status": "available", "granted_at": "2026-01-02T00:00:00Z", "expires_at": "2026-01-20T10:00:00.000Z" }
+        ]
+      }
     },
+    "credits": { "remaining": 12.5, "updatedAt": "2026-01-10T12:00:00Z" },
     "pace": { "secondary": { "deltaPercent": 30, "stage": "behind", "summary": "30% in deficit | Runs out in 2h 30m", "willLastToReset": false, "etaSeconds": 9000 } }
   },
   {
@@ -69,7 +90,8 @@
     "usage": {
       "primary": { "usedPercent": 16, "resetsAt": "2026-02-01T00:00:00Z" },
       "accountEmail": "someone@example.com",
-      "loginMethod": "Individual"
+      "loginMethod": "Individual",
+      "details": [ { "title": "Credits", "rows": [ { "id": "copilot-seat-credits", "label": "Credits used", "value": "0", "secondaryValue": "tomorrow, 1:00\u202fAM", "usageValue": 0 } ] } ]
     }
   },
   {
@@ -79,7 +101,8 @@
       "primary": { "windowMinutes": 10080, "resetsAt": "2026-01-14T00:00:00Z", "usedPercent": 30 },
       "accountEmail": "someone@example.com",
       "accountOrganization": "Example Org",
-      "loginMethod": "X Premium+"
+      "loginMethod": "X Premium+",
+      "details": [ { "rows": [ { "label": "Limit Reset Credits", "value": "2 available", "secondaryValue": "Expires tomorrow, 1:00\u202fAM" } ] } ]
     }
   },
   {

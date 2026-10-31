@@ -29,7 +29,7 @@ CI runs both suites on macOS with Python 3.11 and 3.13 and Node 24. Run both bef
 ## Rules
 
 - Python 3.11 or newer, standard library only. No third-party dependencies.
-- Privacy: never store or log account identifiers, emails or raw CodexBar output. The snapshot keeps only windows, plan names and pace.
+- Privacy: never store or log account identifiers, emails or raw CodexBar output. The snapshot keeps only windows, plan names, pace and usable credits with their expiry.
 - Commands called by Herdr, agents or the poller stay quiet. A failing hook must never disturb the agent that runs it.
 - `setup` plans every change first, so `setup --dry-run` shows the exact diff. It backs up files before changing them, never replaces settings it did not write, and `uninstall` undoes it. Any new wiring (agent settings, hooks, plugins, the poller) goes through `setup`, not through manual steps in the README.
 - Don't hardcode paths from one machine. Resolve binaries and interpreters at run or install time.
