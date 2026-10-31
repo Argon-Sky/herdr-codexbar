@@ -1,15 +1,15 @@
 """Read quota from the CodexBar CLI into a small private snapshot.
 
-Only windows, plan names and pace are kept: no account identifiers, emails or
-raw CodexBar output are stored or logged.
+Only windows, plan names, pace and CodexBar's run-out estimate are kept: no account identifiers, emails or raw CodexBar output are stored or logged.
 """
 
 import json
+import math
 import os
 import shutil
 import subprocess
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from numbers import Real
 
 from . import STATE_DIR
@@ -72,7 +72,20 @@ def pace_delta(pace):
     return number(pace.get("deltaPercent"))
 
 
-def window(data, pace=None, known=True, default_minutes=None):
+def runs_out_at(pace, now):
+    """When CodexBar says the window runs out before its reset: its `etaSeconds` after `now`, as ISO 8601; None when it lasts or gives no usable time."""
+    if not isinstance(pace, dict) or pace.get("willLastToReset") is not False or now is None:
+        return None
+    eta = number(pace.get("etaSeconds"), 0)
+    if eta is None or not math.isfinite(eta):
+        return None
+    try:
+        return (now + timedelta(seconds=eta)).isoformat()
+    except OverflowError:
+        return None
+
+
+def window(data, pace=None, known=True, default_minutes=None, now=None):
     if not isinstance(data, dict):
         return None
     used = number(data.get("usedPercent"), 0, 100)
@@ -85,6 +98,7 @@ def window(data, pace=None, known=True, default_minutes=None):
         "used": used,
         "resetsAt": reset if isinstance(reset, str) else None,
         "pace": pace_delta(pace),
+        "runsOutAt": runs_out_at(pace, now),
     }
 
 
@@ -104,6 +118,8 @@ def normalize(raw, names=None, now=None):
     if not isinstance(raw, list):
         raise TypeError("CodexBar output must be an array")
     names = names or {}
+    # One instant for updatedAt and every run-out, so a reader can tell how old the estimate is.
+    now = now or datetime.now(timezone.utc)
     providers = {}
     for record in raw:
         if not isinstance(record, dict) or not isinstance(record.get("provider"), str):
@@ -121,13 +137,13 @@ def normalize(raw, names=None, now=None):
         if provider == "antigravity":
             for entry in usage.get("extraRateWindows") or []:
                 if isinstance(entry, dict) and entry.get("id") in AGY_POOLS:
-                    item = window(entry.get("window"), known=entry.get("usageKnown") is not False)
+                    item = window(entry.get("window"), known=entry.get("usageKnown") is not False, now=now)
                     if item:
                         pools.setdefault(AGY_POOLS[entry["id"]], []).append(item)
         else:
             pace = record.get("pace") if isinstance(record.get("pace"), dict) else {}
             for slot in SLOTS:
-                item = window(usage.get(slot), pace.get(slot), default_minutes=DEFAULT_MINUTES.get(provider))
+                item = window(usage.get(slot), pace.get(slot), default_minutes=DEFAULT_MINUTES.get(provider), now=now)
                 if item:
                     pools.setdefault("", []).append(item)
         for items in pools.values():
@@ -137,16 +153,18 @@ def normalize(raw, names=None, now=None):
             "plan": plan_name(provider, usage.get("loginMethod"), names.get(provider)),
             "pools": pools,
         }
-    return {"updatedAt": (now or datetime.now(timezone.utc)).isoformat(), "providers": providers}
+    return {"updatedAt": now.isoformat(), "providers": providers}
 
 
 def poll(runner=subprocess.run):
     raw = run_json(["usage", "--provider", "", "--json"], runner)
+    # CodexBar counts etaSeconds from its answer, so the snapshot is dated then, not after the names below.
+    now = datetime.now(timezone.utc)
     try:
         names = {entry["provider"]: entry.get("displayName") for entry in run_json(["config", "providers", "--json"], runner)}
     except (OSError, ValueError, TypeError, KeyError, subprocess.SubprocessError):
         names = {}
-    snapshot = normalize(raw, names)
+    snapshot = normalize(raw, names, now)
     if not any(provider["pools"] for provider in snapshot["providers"].values()):
         raise ValueError("CodexBar returned no quota windows; the previous snapshot is kept")
     write_json(SNAPSHOT, snapshot)

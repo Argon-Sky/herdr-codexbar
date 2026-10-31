@@ -1,5 +1,6 @@
 import json
 import unittest
+from unittest import mock
 
 from herdr_codexbar import codexbar
 
@@ -42,6 +43,29 @@ class NormalizeTests(unittest.TestCase):
         claude = self.providers["claude"]["pools"][""]
         self.assertEqual([window["pace"] for window in claude], [-25.0, 0.0])
 
+    def test_runs_out_at_is_codexbars_eta_after_updated_at(self):
+        codex = self.providers["codex"]["pools"][""]
+        self.assertEqual([window["runsOutAt"] for window in codex], [None, "2026-01-10T14:30:00+00:00"])
+        # Lasts until reset, no willLastToReset, no pace at all, and Antigravity's pools, which carry no pace.
+        self.assertEqual([window["runsOutAt"] for window in self.providers["claude"]["pools"][""]], [None, None])
+        self.assertIsNone(self.providers["copilot"]["pools"][""][0]["runsOutAt"])
+        self.assertIsNone(self.providers["qwencloud"]["pools"][""][0]["runsOutAt"])
+        for pool in self.providers["antigravity"]["pools"].values():
+            self.assertEqual([window["runsOutAt"] for window in pool], [None, None])
+
+    def test_runs_out_at_needs_a_finite_eta_of_zero_or_more(self):
+        def runs_out(**pace):
+            return codexbar.runs_out_at({"willLastToReset": False, **pace}, NOW)
+        self.assertEqual(runs_out(etaSeconds=0), "2026-01-10T12:00:00+00:00")
+        self.assertEqual(runs_out(etaSeconds=90.5), "2026-01-10T12:01:30.500000+00:00")
+        for eta in (None, -1, True, False, float("nan"), float("inf"), "9000", 1e30):
+            self.assertIsNone(runs_out(etaSeconds=eta), eta)
+        self.assertIsNone(runs_out())
+        self.assertIsNone(codexbar.runs_out_at({"willLastToReset": True, "etaSeconds": 60}, NOW))
+        self.assertIsNone(codexbar.runs_out_at({"willLastToReset": 0, "etaSeconds": 60}, NOW))
+        self.assertIsNone(codexbar.runs_out_at({"willLastToReset": False, "etaSeconds": 60}, None))
+        self.assertIsNone(codexbar.runs_out_at(None, NOW))
+
     def test_antigravity_splits_pools_and_ignores_per_model_windows(self):
         pools = self.providers["antigravity"]["pools"]
         self.assertEqual(sorted(pools), ["claude-gpt", "gemini"])
@@ -74,6 +98,27 @@ class NormalizeTests(unittest.TestCase):
         Result.stdout = json.dumps(fixture("codexbar-usage.json")[:1] + [{"provider": "opencodego", "error": {"kind": "provider"}}])
         providers = codexbar.poll(lambda *args, **kwargs: Result())["providers"]
         self.assertEqual((sorted(providers), providers["opencodego"]["failed"]), (["claude", "opencodego"], True))
+
+    def test_poll_dates_the_snapshot_when_codexbar_answered(self):
+        calls = []
+
+        class Clock:
+            @staticmethod
+            def now(tz=None):
+                calls.append("now")
+                return NOW
+
+        def runner(args, **kwargs):
+            calls.append(args[1])
+
+            class Result:
+                stdout = json.dumps(fixture("codexbar-usage.json")[:2] if args[1] == "usage" else [])
+            return Result()
+
+        with mock.patch.object(codexbar, "datetime", Clock):
+            snapshot = codexbar.poll(runner)
+        self.assertEqual(calls, ["usage", "now", "config"])
+        self.assertEqual(snapshot["providers"]["codex"]["pools"][""][1]["runsOutAt"], "2026-01-10T14:30:00+00:00")
 
     def test_no_account_details_are_kept(self):
         text = json.dumps(snapshot())
