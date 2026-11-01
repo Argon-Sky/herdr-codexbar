@@ -181,7 +181,7 @@ class CreditTests(unittest.TestCase):
             {"kind": "reset", "count": 1, "expiresAt": None},
         ])
         self.assertEqual(providers["claude"]["credits"], [
-            {"kind": "cloud", "amount": 248.526216, "currency": "USD", "expiresAt": "2026-01-15T07:59:00+00:00"},
+            {"kind": "cloud", "amount": 123.45, "currency": "USD", "expiresAt": "2026-01-15T07:59:00+00:00"},
             {"kind": "reset", "count": 1, "expiresAt": None},
         ])
         # "tomorrow, 1:00 AM" from 13:00 in Warsaw: 1:00 on 11 January there.

@@ -14,7 +14,7 @@
       "providerCost": { "used": 0, "limit": 50, "currencyCode": "USD", "period": "Monthly" },
       "details": [
         { "title": "Cloud credits", "rows": [
-          { "id": "claude-cloud-credits", "label": "Cloud credits", "value": "$248.53 of $250.00 remaining", "secondaryValue": "Expires 2026-01-15T07:59:00Z", "progress": { "used": 1.473784, "total": 250 }, "usageValue": 248.526216 }
+          { "id": "claude-cloud-credits", "label": "Cloud credits", "value": "$123.45 of $250.00 remaining", "secondaryValue": "Expires 2026-01-15T07:59:00Z", "progress": { "used": 126.55, "total": 250 }, "usageValue": 123.45 }
         ] },
         { "rows": [ { "label": "Limit Reset Credits", "value": "1 available" } ] }
       ]
