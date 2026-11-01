@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from herdr_codexbar import install
+from herdr_codexbar import codexbar, install
 
 BIN = "/opt/homebrew/bin/herdr-codexbar"
 
@@ -105,7 +105,10 @@ class InstallTests(unittest.TestCase):
         config.write_text('[ui.sidebar.agents]\nrows = [["agent"]]\n')
         before = {path: path.read_text() for path in self.home.rglob("*") if path.is_file()}
         install.setup()
+        for path in (codexbar.SNAPSHOT, codexbar.PLANS):
+            codexbar.write_json(path, {})
         install.uninstall()
+        self.assertFalse(codexbar.SNAPSHOT.exists() or codexbar.PLANS.exists())
         after = {path: path.read_text() for path in self.home.rglob("*") if path.is_file()}
         self.assertEqual(after.pop(self.home / ".claude/settings.json"), "{}\n")
         self.assertEqual(after.pop(self.home / ".gemini/antigravity-cli/settings.json"), "{}\n")

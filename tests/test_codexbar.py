@@ -1,8 +1,11 @@
+import contextlib
+import io
 import json
 import os
+import subprocess
 import time
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest import mock
 
 from herdr_codexbar import codexbar
@@ -69,11 +72,46 @@ class NormalizeTests(unittest.TestCase):
         self.assertIsNone(codexbar.runs_out_at({"willLastToReset": False, "etaSeconds": 60}, None))
         self.assertIsNone(codexbar.runs_out_at(None, NOW))
 
-    def test_antigravity_splits_pools_and_ignores_per_model_windows(self):
+    def test_antigravity_splits_pools_and_keeps_model_windows_apart(self):
         pools = self.providers["antigravity"]["pools"]
         self.assertEqual(sorted(pools), ["claude-gpt", "gemini"])
         self.assertEqual([window["used"] for window in pools["gemini"]], [10.0, 20.0])
         self.assertFalse(pools["claude-gpt"][1]["known"])
+        # Every other extra window applies to one model: a model-specific summary allowance, grouped by model and sorted by length, and a per-model row.
+        models = self.providers["antigravity"]["models"]
+        self.assertEqual(sorted(models), ["Gemini 3 Pro", "Gemini Ultra"])
+        self.assertEqual([(window["label"], window["used"], window["resetsAt"]) for window in models["Gemini Ultra"]],
+                         [("5h", 40.0, "2026-01-10T14:00:00Z"), ("7d", 100.0, "2026-01-16T09:00:00Z")])
+        (row,) = models["Gemini 3 Pro"]
+        self.assertFalse(row["known"])
+
+    def test_model_windows_of_other_providers(self):
+        claude = self.providers["claude"]
+        self.assertEqual([window["label"] for window in claude["pools"][""]], ["5h", "7d"])
+        self.assertEqual(claude["models"], {"Opus": [{"label": "7d", "minutes": 10080.0, "known": True, "used": 0.0, "resetsAt": "2026-01-17T06:00:00Z", "pace": None, "runsOutAt": None}]})
+        # Only providers with model windows carry the field, and a failed provider never does.
+        self.assertEqual(sorted(name for name, data in self.providers.items() if "models" in data), ["antigravity", "claude"])
+        raw = [{"provider": "codex", "usage": {"primary": {"windowMinutes": 300, "usedPercent": 1}, "extraRateWindows": [
+            {"id": "codex-spark", "title": "Codex Spark 5h", "window": {"windowMinutes": 300, "usedPercent": 2}},
+            {"id": "no-title", "window": {"windowMinutes": 300, "usedPercent": 3}},
+            {"title": 7, "window": {"windowMinutes": 300, "usedPercent": 4}},
+            {"id": "no-window", "title": "Nothing"},
+            "not an entry"]}},
+               {"provider": "grok", "usage": {"primary": {"windowMinutes": 10080, "usedPercent": 1}, "extraRateWindows": {"id": "not-a-list"}}}]
+        providers = codexbar.normalize(raw, now=NOW)["providers"]
+        self.assertEqual({name: [window["used"] for window in windows] for name, windows in providers["codex"]["models"].items()}, {"Codex Spark": [2.0], "no-title": [3.0]})
+        self.assertEqual([window["used"] for window in providers["codex"]["pools"][""]], [1.0])
+        self.assertNotIn("models", providers["grok"])
+
+    def test_model_names_follow_codexbar_titles(self):
+        for title, name in (("Gemini Ultra weekly", "Gemini Ultra"), ("Opus only", "Opus"), ("Claude/GPT 5-hour", "Claude/GPT"), ("Opus only weekly", "Opus"),
+                            ("Codex Spark 5h", "Codex Spark"), ("Gemini 3 Pro 7d", "Gemini 3 Pro"), ("Haiku 30-minutes", "Haiku"), ("Model  ONLY", "Model"),
+                            ("Gemini 3", "Gemini 3"), ("Weekly", "Weekly"), ("only weekly", "only")):
+            self.assertEqual(codexbar.model_name(title, "window-id"), name, title)
+        self.assertEqual(codexbar.model_name("  ", "window-id"), "window-id")
+        self.assertEqual(codexbar.model_name(None, "window-id"), "window-id")
+        self.assertIsNone(codexbar.model_name(None, None))
+        self.assertIsNone(codexbar.model_name("", ""))
 
     def test_unsupported_providers_are_skipped(self):
         self.assertNotIn("broken", self.providers)
@@ -144,6 +182,108 @@ class NormalizeTests(unittest.TestCase):
             stdout = "[]"
         with self.assertRaises(ValueError):
             codexbar.poll(lambda *args, **kwargs: Result())
+
+
+class PlanSourceTests(unittest.TestCase):
+    """Antigravity's plan from CodexBar's OAuth source when its configured source names none, read at most once an hour."""
+
+    EMAIL = "someone@example.com"
+
+    def setUp(self):
+        codexbar.PLANS.unlink(missing_ok=True)
+        self.calls = []
+        self.answer = [{"provider": "antigravity", "source": "oauth", "account": self.EMAIL, "usage": {
+            "loginMethod": "Google AI Pro", "accountEmail": self.EMAIL, "identity": {"providerID": "antigravity", "accountEmail": self.EMAIL, "loginMethod": "Google AI Pro"},
+            "primary": {"windowMinutes": 300, "usedPercent": 99}}}]
+
+    def raw(self, **usage):
+        windows = [{"id": "antigravity-quota-summary-gemini-5h", "title": "Gemini 5-hour", "window": {"windowMinutes": 300, "usedPercent": 10}}]
+        return [{"provider": "antigravity", "source": "cli", "usage": {"extraRateWindows": windows, "accountEmail": self.EMAIL, **usage}}]
+
+    def runner(self, args, **kwargs):
+        self.calls.append(args[1:])
+        if isinstance(self.answer, Exception):
+            raise self.answer
+
+        class Result:
+            stdout = self.answer if isinstance(self.answer, str) else json.dumps(self.answer)
+        return Result()
+
+    def plans(self, raw=None, now=NOW):
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):
+            plans = codexbar.source_plans(self.raw() if raw is None else raw, now, self.runner)
+        self.assertEqual(output.getvalue(), "")
+        return plans
+
+    def test_read_from_the_oauth_source_at_most_once_an_hour(self):
+        self.assertEqual(self.plans(), {"antigravity": "Google AI Pro"})
+        self.assertEqual(self.calls, [["usage", "--provider", "antigravity", "--json", "--source", "oauth"]])
+        self.assertEqual(json.loads(codexbar.PLANS.read_text()), {"antigravity": {"plan": "Google AI Pro", "checkedAt": "2026-01-10T12:00:00+00:00"}})
+        self.assertEqual(codexbar.PLANS.stat().st_mode & 0o777, 0o600)
+        self.answer = [{"provider": "antigravity", "usage": {"loginMethod": "Paid"}}]
+        self.assertEqual(self.plans(now=NOW + timedelta(minutes=59)), {"antigravity": "Google AI Pro"})
+        self.assertEqual(len(self.calls), 1)
+        self.assertEqual(self.plans(now=NOW + timedelta(hours=1)), {"antigravity": "Paid"})
+        self.assertEqual(len(self.calls), 2)
+        # A cache dated ahead of the clock is read again.
+        self.assertEqual(self.plans(now=NOW), {"antigravity": "Paid"})
+        self.assertEqual(len(self.calls), 3)
+
+    def test_a_failed_read_keeps_the_last_plan_else_none_and_waits_an_hour(self):
+        failures = [OSError("no codexbar"), subprocess.TimeoutExpired("codexbar", 60), "not json", "{}", "7",
+                    [{"provider": "antigravity", "error": {"kind": "provider", "message": "Sign in as " + self.EMAIL}}],
+                    [{"provider": "antigravity", "usage": {"loginMethod": " "}}], [{"provider": "claude", "usage": {"loginMethod": "Claude Pro"}}]]
+        for failure in failures:
+            codexbar.PLANS.unlink(missing_ok=True)
+            self.answer = failure
+            self.assertEqual(self.plans(), {}, failure)
+            self.assertEqual(json.loads(codexbar.PLANS.read_text()), {"antigravity": {"plan": None, "checkedAt": "2026-01-10T12:00:00+00:00"}})
+            self.assertEqual(self.plans(now=NOW + timedelta(minutes=30)), {})
+            codexbar.write_json(codexbar.PLANS, {"antigravity": {"plan": "Google AI Pro", "checkedAt": "2026-01-10T09:00:00+00:00"}})
+            self.assertEqual(self.plans(), {"antigravity": "Google AI Pro"}, failure)
+            self.assertEqual(json.loads(codexbar.PLANS.read_text())["antigravity"]["checkedAt"], "2026-01-10T12:00:00+00:00")
+        self.assertEqual(len(self.calls), 2 * len(failures))
+
+    def test_no_read_when_the_configured_source_names_the_plan_or_antigravity_is_not_read(self):
+        for raw in (self.raw(loginMethod="Google AI Pro"), [{"provider": "antigravity", "error": {"kind": "provider"}}], [{"provider": "claude", "usage": {}}], {}, None):
+            self.assertEqual(codexbar.source_plans(raw, NOW, self.runner), {})
+        self.assertEqual(self.calls, [])
+        self.assertFalse(codexbar.PLANS.exists())
+        # The record's own plan wins over one read before.
+        self.assertEqual(codexbar.normalize(self.raw(loginMethod="Google AI Ultra"), now=NOW, plans={"antigravity": "Google AI Pro"})["providers"]["antigravity"]["plan"], "Google AI Ultra")
+
+    def test_a_cache_holds_only_a_plan_and_when_it_was_read(self):
+        codexbar.write_json(codexbar.PLANS, {"antigravity": {"plan": "Google AI Pro", "checkedAt": "2026-01-10T09:00:00+00:00", "email": self.EMAIL}, "other": {"x": 1}})
+        self.plans()
+        self.assertEqual(json.loads(codexbar.PLANS.read_text()), {"antigravity": {"plan": "Google AI Pro", "checkedAt": "2026-01-10T12:00:00+00:00"}})
+
+    def test_poll_reads_the_plan_after_dating_the_snapshot_and_keeps_no_account_details(self):
+        order = []
+
+        class Clock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                order.append("now")
+                return NOW
+
+        def runner(args, **kwargs):
+            order.append("oauth" if "--source" in args else args[1])
+            if "--source" in args:
+                return self.runner(args)
+
+            class Result:
+                stdout = json.dumps(self.raw() if args[1] == "usage" else [{"provider": "antigravity", "displayName": "Antigravity"}])
+            return Result()
+
+        with mock.patch.object(codexbar, "datetime", Clock):
+            snapshot = codexbar.poll(runner)
+        self.assertEqual(order, ["usage", "now", "config", "oauth"])
+        antigravity = snapshot["providers"]["antigravity"]
+        self.assertEqual((antigravity["plan"], [window["used"] for window in antigravity["pools"]["gemini"]]), ("Google AI Pro", [10.0]))
+        for text in (codexbar.SNAPSHOT.read_text(), codexbar.PLANS.read_text()):
+            for value in ("example.com", "someone", "identity", "account", "99"):
+                self.assertNotIn(value, text)
 
 
 class CreditTests(unittest.TestCase):
