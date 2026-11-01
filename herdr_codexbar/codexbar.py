@@ -32,8 +32,7 @@ AGY_POOLS = {
     "antigravity-quota-summary-3p-5h": "claude-gpt",
     "antigravity-quota-summary-3p-weekly": "claude-gpt",
 }
-# CodexBar's extra windows that are not one model's limit, by id: a renewal date (OpenCode Go's `renewal`), Claude's Daily Routines and monthly Extra usage, Antigravity's
-# offline conversation count and the reset-only rows of its two pools, Qwen Cloud's own monthly quota, and Copilot's opt-in spend budgets, whose titles can carry a budget's name.
+# CodexBar's extra windows that are not one model's limit, by id: a renewal date (OpenCode Go's `renewal`), Claude's Daily Routines and monthly Extra usage, Antigravity's offline conversation count and the reset-only rows of its two pools, Qwen Cloud's own monthly quota, and Copilot's opt-in spend budgets, whose titles can carry a budget's name.
 NOT_MODEL_WINDOWS = {"renewal", "claude-routines", "claude-extra-usage", "antigravity-offline-conversations", "antigravity-gemini", "antigravity-claude-gpt", "monthly"}
 NOT_MODEL_PREFIXES = ("copilot-budget",)
 # Trailing words of an extra window's title that give its length or scope rather than its model: "Opus only", "Gemini Ultra weekly", "Claude/GPT 5-hour".
