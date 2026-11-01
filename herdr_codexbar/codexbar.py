@@ -1,6 +1,7 @@
 """Read quota from the CodexBar CLI into a small private snapshot.
 
 Only windows, plan names, pace, CodexBar's run-out estimate and usable credits with their expiry are kept: no account identifiers, emails or raw CodexBar output are stored or logged.
+A provider's windows go into its pools, which the sidebar shows; CodexBar's extra windows that apply to one model only go into its models, by model name.
 """
 
 import json
@@ -31,6 +32,17 @@ AGY_POOLS = {
     "antigravity-quota-summary-3p-5h": "claude-gpt",
     "antigravity-quota-summary-3p-weekly": "claude-gpt",
 }
+# CodexBar's extra windows that are not one model's limit, by id: a renewal date (OpenCode Go's `renewal`), Claude's Daily Routines and monthly Extra usage, Antigravity's offline conversation count and the reset-only rows of its two pools, Qwen Cloud's own monthly quota, and Copilot's opt-in spend budgets, whose titles can carry a budget's name.
+NOT_MODEL_WINDOWS = {"renewal", "claude-routines", "claude-extra-usage", "antigravity-offline-conversations", "antigravity-gemini", "antigravity-claude-gpt", "monthly"}
+NOT_MODEL_PREFIXES = ("copilot-budget",)
+# Trailing words of an extra window's title that give its length or scope rather than its model: "Opus only", "Gemini Ultra weekly", "Claude/GPT 5-hour".
+NOT_MODEL = re.compile(r"only|weekly|daily|monthly|hourly|session|\d+(?:[mhdw]|-?(?:minute|hour|day|week|month)s?)", re.IGNORECASE)
+# The CodexBar source that names a provider's plan when the configured one does not: Antigravity's agy report has no plan, its OAuth source has.
+PLAN_SOURCES = {"antigravity": "oauth"}
+# Seconds between two reads of a plan source, whether the last one worked or not; the poller runs every few minutes.
+PLAN_EVERY = 3600
+# The last plan read from a plan source and when it was read, nothing else.
+PLANS = STATE_DIR / "plans.json"
 # Brand to put before a bare tier name ("plus" -> "ChatGPT Plus"); the default is the display name.
 BRANDS = {"codex": "ChatGPT"}
 # CodexBar's own constants for the credit sources: ClaudeCloudCreditsSnapshot.detailRowID and the label of Claude's and Grok's limit reset rows.
@@ -119,6 +131,28 @@ def plan_name(provider, login_method, display_name):
         return base
     tier = base[:1].upper() + base[1:] if base.islower() else base
     return f"{BRANDS.get(provider, display)} {tier}"
+
+
+def model_name(title, window_id):
+    """The model an extra window applies to: CodexBar's title without trailing length words or "only", the whole title when nothing would remain, else the window's id."""
+    if isinstance(title, str) and title.strip():
+        words = title.split()
+        while len(words) > 1 and NOT_MODEL.fullmatch(words[-1]):
+            words.pop()
+        return " ".join(words)
+    return window_id if isinstance(window_id, str) and window_id else None
+
+
+def account(usage):
+    """The account a record was read for, to compare two records in memory; never stored."""
+    value = usage.get("accountEmail")
+    return value.strip().lower() if isinstance(value, str) and value.strip() else None
+
+
+def login(usage):
+    """The record's own plan: its `loginMethod` when that names one."""
+    value = usage.get("loginMethod")
+    return value if isinstance(value, str) and value.split("·")[0].strip() else None
 
 
 def instant(value):
@@ -250,10 +284,11 @@ def credits(usage, now):
     return [entry for _, entry in found]
 
 
-def normalize(raw, names=None, now=None):
+def normalize(raw, names=None, now=None, plans=None):
+    """The snapshot of CodexBar's output; `plans` names a provider's plan when its record has none (`source_plans`)."""
     if not isinstance(raw, list):
         raise TypeError("CodexBar output must be an array")
-    names = names or {}
+    names, plans = names or {}, plans or {}
     # One instant for updatedAt and every run-out, so a reader can tell how old the estimate is.
     now = now or datetime.now(timezone.utc)
     providers = {}
@@ -269,26 +304,34 @@ def normalize(raw, names=None, now=None):
             if record.get("error"):
                 providers.setdefault(provider, {"name": names.get(provider) or provider, "plan": plan_name(provider, None, names.get(provider)), "pools": {}, "failed": True})
             continue
-        pools = {}
-        if provider == "antigravity":
-            for entry in usage.get("extraRateWindows") or []:
-                if isinstance(entry, dict) and entry.get("id") in AGY_POOLS:
-                    item = window(entry.get("window"), known=entry.get("usageKnown") is not False, now=now)
-                    if item:
-                        pools.setdefault(AGY_POOLS[entry["id"]], []).append(item)
-        else:
+        pools, models = {}, {}
+        extras = usage.get("extraRateWindows")
+        for entry in extras if isinstance(extras, list) else []:
+            if not isinstance(entry, dict):
+                continue
+            entry_id = entry.get("id") if isinstance(entry.get("id"), str) else None
+            # Antigravity's summary windows make its pools; every other extra window applies to one model only, but the ones CodexBar uses for something else.
+            pool = AGY_POOLS.get(entry_id) if provider == "antigravity" else None
+            other = entry_id is not None and (entry_id in NOT_MODEL_WINDOWS or entry_id.startswith(NOT_MODEL_PREFIXES))
+            name = None if pool or other else model_name(entry.get("title"), entry_id)
+            item = window(entry.get("window"), known=entry.get("usageKnown") is not False, now=now) if pool or name else None
+            if item:
+                (pools.setdefault(pool, []) if pool else models.setdefault(name, [])).append(item)
+        if provider != "antigravity":
             pace = record.get("pace") if isinstance(record.get("pace"), dict) else {}
             for slot in SLOTS:
                 item = window(usage.get(slot), pace.get(slot), default_minutes=DEFAULT_MINUTES.get(provider), now=now)
                 if item:
                     pools.setdefault("", []).append(item)
-        for items in pools.values():
+        for items in (*pools.values(), *models.values()):
             items.sort(key=lambda item: item["minutes"] or float("inf"))
         providers[provider] = {
             "name": names.get(provider) or provider,
-            "plan": plan_name(provider, usage.get("loginMethod"), names.get(provider)),
+            "plan": plan_name(provider, usage.get("loginMethod") if login(usage) else plans.get(provider), names.get(provider)),
             "pools": pools,
         }
+        if models:
+            providers[provider]["models"] = models
         usable = credits(usage, now)
         if usable:
             providers[provider]["credits"] = usable
@@ -303,11 +346,53 @@ def poll(runner=subprocess.run):
         names = {entry["provider"]: entry.get("displayName") for entry in run_json(["config", "providers", "--json"], runner)}
     except (OSError, ValueError, TypeError, KeyError, subprocess.SubprocessError):
         names = {}
-    snapshot = normalize(raw, names, now)
+    snapshot = normalize(raw, names, now, source_plans(raw, now, runner))
     if not any(provider["pools"] for provider in snapshot["providers"].values()):
         raise ValueError("CodexBar returned no quota windows; the previous snapshot is kept")
     write_json(SNAPSHOT, snapshot)
     return snapshot
+
+
+def source_plans(raw, now, runner=subprocess.run):
+    """Plans for the providers in PLAN_SOURCES that CodexBar read without one, from that source, read at most once per PLAN_EVERY and kept in PLANS.
+
+    A read that fails or names no plan keeps the last plan read, else none; one that names only another account's plan than the configured source read clears it.
+    Nothing else from that answer is kept or printed: it carries the account's email and identity, which are only compared in memory.
+    """
+    wanted = {record["provider"]: account(record["usage"]) for record in (raw if isinstance(raw, list) else []) if isinstance(record, dict) and isinstance(record.get("provider"), str)
+              and record["provider"] in PLAN_SOURCES and isinstance(record.get("usage"), dict) and not login(record["usage"])}
+    if not wanted:
+        return {}
+    try:
+        cached = json.loads(PLANS.read_text())
+    except (OSError, ValueError):
+        cached = {}
+    kept = {}
+    for provider in PLAN_SOURCES:
+        entry = cached.get(provider) if isinstance(cached, dict) else None
+        if isinstance(entry, dict) and instant(entry.get("checkedAt")):
+            kept[provider] = {"plan": entry.get("plan") if isinstance(entry.get("plan"), str) and entry.get("plan") else None, "checkedAt": entry["checkedAt"]}
+    changed = False
+    for provider in wanted:
+        entry = kept.get(provider, {"plan": None, "checkedAt": None})
+        checked = instant(entry["checkedAt"])
+        if checked is None or not 0 <= (now - checked).total_seconds() < PLAN_EVERY:
+            plan = entry["plan"]
+            try:
+                answer = run_json(["usage", "--provider", provider, "--json", "--source", PLAN_SOURCES[provider]], runner)
+                named = [record["usage"] for record in answer if isinstance(record, dict) and record.get("provider") == provider and isinstance(record.get("usage"), dict) and login(record["usage"])]
+                # CodexBar's configured source can read another Google account than the one added to CodexBar; that account's plan is not this one's.
+                mine = [usage for usage in named if not (wanted[provider] and account(usage)) or account(usage) == wanted[provider]]
+                plan = login(mine[0]) if mine else None if named else plan
+            except (OSError, ValueError, TypeError, subprocess.SubprocessError):
+                pass
+            kept[provider], changed = {"plan": plan, "checkedAt": now.isoformat()}, True
+    if changed:
+        try:
+            write_json(PLANS, kept)
+        except OSError:
+            pass
+    return {provider: kept[provider]["plan"] for provider in wanted if kept.get(provider, {}).get("plan")}
 
 
 def write_json(path, payload):

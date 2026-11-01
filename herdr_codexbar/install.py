@@ -449,7 +449,7 @@ def uninstall(dry_run=False):
     if brew():
         run([brew(), "services", "stop", MARKER])
     panes.clear_all()
-    for path in (UNDO, codexbar.SNAPSHOT):
+    for path in (UNDO, codexbar.SNAPSHOT, codexbar.PLANS):
         path.unlink(missing_ok=True)
     run(["herdr", "server", "reload-config"])
     print(f"Removed. Backups stay in {BACKUPS}; `brew uninstall {MARKER}` removes the package.")

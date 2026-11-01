@@ -7,6 +7,9 @@
       "primary": { "windowMinutes": 300, "resetsAt": "2026-01-10T15:31:00Z", "resetDescription": "3h 31m", "usedPercent": 5 },
       "secondary": { "windowMinutes": 10080, "resetsAt": "2026-01-17T06:00:00Z", "resetDescription": "6d 18h", "usedPercent": 40 },
       "tertiary": null,
+      "extraRateWindows": [
+        { "id": "claude-weekly-scoped-opus", "title": "Opus only", "window": { "windowMinutes": 10080, "resetsAt": "2026-01-17T06:00:00Z", "usedPercent": 0 } }
+      ],
       "accountEmail": "someone@example.com",
       "accountOrganization": "Example Org",
       "loginMethod": "Claude Pro",
@@ -14,7 +17,7 @@
       "providerCost": { "used": 0, "limit": 50, "currencyCode": "USD", "period": "Monthly" },
       "details": [
         { "title": "Cloud credits", "rows": [
-          { "id": "claude-cloud-credits", "label": "Cloud credits", "value": "$248.53 of $250.00 remaining", "secondaryValue": "Expires 2026-01-15T07:59:00Z", "progress": { "used": 1.473784, "total": 250 }, "usageValue": 248.526216 }
+          { "id": "claude-cloud-credits", "label": "Cloud credits", "value": "$123.45 of $250.00 remaining", "secondaryValue": "Expires 2026-01-15T07:59:00Z", "progress": { "used": 126.55, "total": 250 }, "usageValue": 123.45 }
         ] },
         { "rows": [ { "label": "Limit Reset Credits", "value": "1 available" } ] }
       ]
@@ -62,7 +65,9 @@
         { "id": "antigravity-quota-summary-gemini-weekly", "title": "Gemini weekly", "window": { "usedPercent": 20, "resetsAt": "2026-01-15T12:00:00Z", "windowMinutes": 10080 } },
         { "id": "antigravity-quota-summary-3p-5h", "title": "Claude and GPT 5h", "window": { "usedPercent": 0, "windowMinutes": 300 } },
         { "id": "antigravity-quota-summary-3p-weekly", "title": "Claude and GPT weekly", "usageKnown": false, "window": { "usedPercent": 0, "windowMinutes": 10080 } },
-        { "id": "antigravity-model-gemini-pro", "title": "Per model", "window": { "usedPercent": 1, "windowMinutes": 300 } }
+        { "id": "antigravity-quota-summary-gemini-ultra-weekly", "title": "Gemini Ultra weekly", "window": { "usedPercent": 100, "resetsAt": "2026-01-16T09:00:00Z", "windowMinutes": 10080 } },
+        { "id": "antigravity-quota-summary-gemini-ultra-5h", "title": "Gemini Ultra 5-hour", "window": { "usedPercent": 40, "resetsAt": "2026-01-10T14:00:00Z", "windowMinutes": 300 } },
+        { "id": "gemini-3-pro", "title": "Gemini 3 Pro", "usageKnown": false, "window": { "usedPercent": 100, "windowMinutes": 300 } }
       ],
       "accountEmail": "someone@example.com",
       "loginMethod": "Google AI Pro"
