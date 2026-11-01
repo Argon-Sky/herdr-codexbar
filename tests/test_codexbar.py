@@ -103,6 +103,29 @@ class NormalizeTests(unittest.TestCase):
         self.assertEqual([window["used"] for window in providers["codex"]["pools"][""]], [1.0])
         self.assertNotIn("models", providers["grok"])
 
+    def test_windows_codexbar_uses_for_other_things_are_not_models(self):
+        def extra(window_id, title, **window):
+            return {"id": window_id, "title": title, "window": {"windowMinutes": 10080, "usedPercent": 5, **window}}
+        raw = [
+            {"provider": "opencodego", "usage": {"primary": {"windowMinutes": 300, "usedPercent": 1}, "extraRateWindows": [extra("renewal", "Renews", windowMinutes=None, usedPercent=0)]}},
+            {"provider": "claude", "usage": {"primary": {"windowMinutes": 300, "usedPercent": 1}, "extraRateWindows": [
+                extra("claude-routines", "Daily Routines"), extra("claude-extra-usage", "Extra usage", windowMinutes=43200), extra("claude-weekly-scoped-opus", "Opus only")]}},
+            {"provider": "antigravity", "usage": {"extraRateWindows": [
+                extra("antigravity-quota-summary-gemini-weekly", "Gemini weekly"), extra("antigravity-offline-conversations", "Offline · 3 conversations"),
+                {**extra("antigravity-gemini", "Gemini"), "usageKnown": False}, {**extra("antigravity-claude-gpt", "Claude + GPT"), "usageKnown": False},
+                extra("antigravity-quota-summary-gemini-ultra-weekly", "Gemini Ultra weekly")]}},
+            {"provider": "qwencloud", "usage": {"primary": {"windowMinutes": 300, "usedPercent": 1}, "extraRateWindows": [extra("monthly", "Monthly", windowMinutes=43200)]}},
+            {"provider": "copilot", "usage": {"primary": {"windowMinutes": 43200, "usedPercent": 1}, "extraRateWindows": [
+                extra("copilot-budget-copilot", "Budget - Copilot"), extra("copilot-budget-example-client", "Budget - Example Client Ltd", usedPercent=150), extra("copilot-budget", "Budget")]}},
+        ]
+        providers = codexbar.normalize(raw, now=NOW)["providers"]
+        self.assertEqual({name: sorted(data.get("models", {})) for name, data in providers.items()},
+                         {"opencodego": [], "claude": ["Opus"], "antigravity": ["Gemini Ultra"], "qwencloud": [], "copilot": []})
+        self.assertEqual(list(providers["antigravity"]["pools"]), ["gemini"])
+        text = json.dumps(providers)
+        for value in ("Renews", "Routines", "Extra usage", "Offline", "Monthly", "Budget", "Example Client"):
+            self.assertNotIn(value, text)
+
     def test_model_names_follow_codexbar_titles(self):
         for title, name in (("Gemini Ultra weekly", "Gemini Ultra"), ("Opus only", "Opus"), ("Claude/GPT 5-hour", "Claude/GPT"), ("Opus only weekly", "Opus"),
                             ("Codex Spark 5h", "Codex Spark"), ("Gemini 3 Pro 7d", "Gemini 3 Pro"), ("Haiku 30-minutes", "Haiku"), ("Model  ONLY", "Model"),
@@ -252,6 +275,26 @@ class PlanSourceTests(unittest.TestCase):
         self.assertFalse(codexbar.PLANS.exists())
         # The record's own plan wins over one read before.
         self.assertEqual(codexbar.normalize(self.raw(loginMethod="Google AI Ultra"), now=NOW, plans={"antigravity": "Google AI Pro"})["providers"]["antigravity"]["plan"], "Google AI Ultra")
+
+    def test_only_the_plan_of_the_account_the_configured_source_read(self):
+        other = "other@example.com"
+        self.answer[0]["usage"]["accountEmail"] = other
+        self.answer[0]["usage"]["loginMethod"] = "Google AI Ultra"
+        self.assertEqual(self.plans(), {})
+        self.assertEqual(json.loads(codexbar.PLANS.read_text()), {"antigravity": {"plan": None, "checkedAt": "2026-01-10T12:00:00+00:00"}})
+        # It also clears a plan read before, which may have been that other account's.
+        codexbar.write_json(codexbar.PLANS, {"antigravity": {"plan": "Google AI Pro", "checkedAt": "2026-01-10T09:00:00+00:00"}})
+        self.assertEqual(self.plans(), {})
+        # Of several accounts, the one the configured source read; the same address in other case is the same account.
+        self.answer.append({"provider": "antigravity", "usage": {"loginMethod": "Google AI Pro", "accountEmail": "SomeOne@Example.com"}})
+        self.assertEqual(self.plans(now=NOW + timedelta(hours=1)), {"antigravity": "Google AI Pro"})
+        # Without an address on either side there is nothing to compare, so the plan is taken.
+        codexbar.PLANS.unlink()
+        self.answer = [{"provider": "antigravity", "usage": {"loginMethod": "Google AI Ultra", "accountEmail": other}}]
+        raw = self.raw()
+        del raw[0]["usage"]["accountEmail"]
+        self.assertEqual(self.plans(raw), {"antigravity": "Google AI Ultra"})
+        self.assertNotIn("example.com", codexbar.PLANS.read_text().lower())
 
     def test_a_cache_holds_only_a_plan_and_when_it_was_read(self):
         codexbar.write_json(codexbar.PLANS, {"antigravity": {"plan": "Google AI Pro", "checkedAt": "2026-01-10T09:00:00+00:00", "email": self.EMAIL}, "other": {"x": 1}})

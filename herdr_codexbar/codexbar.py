@@ -32,6 +32,10 @@ AGY_POOLS = {
     "antigravity-quota-summary-3p-5h": "claude-gpt",
     "antigravity-quota-summary-3p-weekly": "claude-gpt",
 }
+# CodexBar's extra windows that are not one model's limit, by id: a renewal date (OpenCode Go's `renewal`), Claude's Daily Routines and monthly Extra usage, Antigravity's
+# offline conversation count and the reset-only rows of its two pools, Qwen Cloud's own monthly quota, and Copilot's opt-in spend budgets, whose titles can carry a budget's name.
+NOT_MODEL_WINDOWS = {"renewal", "claude-routines", "claude-extra-usage", "antigravity-offline-conversations", "antigravity-gemini", "antigravity-claude-gpt", "monthly"}
+NOT_MODEL_PREFIXES = ("copilot-budget",)
 # Trailing words of an extra window's title that give its length or scope rather than its model: "Opus only", "Gemini Ultra weekly", "Claude/GPT 5-hour".
 NOT_MODEL = re.compile(r"only|weekly|daily|monthly|hourly|session|\d+(?:[mhdw]|-?(?:minute|hour|day|week|month)s?)", re.IGNORECASE)
 # The CodexBar source that names a provider's plan when the configured one does not: Antigravity's agy report has no plan, its OAuth source has.
@@ -138,6 +142,12 @@ def model_name(title, window_id):
             words.pop()
         return " ".join(words)
     return window_id if isinstance(window_id, str) and window_id else None
+
+
+def account(usage):
+    """The account a record was read for, to compare two records in memory; never stored."""
+    value = usage.get("accountEmail")
+    return value.strip().lower() if isinstance(value, str) and value.strip() else None
 
 
 def login(usage):
@@ -301,9 +311,10 @@ def normalize(raw, names=None, now=None, plans=None):
             if not isinstance(entry, dict):
                 continue
             entry_id = entry.get("id") if isinstance(entry.get("id"), str) else None
-            # Antigravity's summary windows make its pools; every other extra window applies to one model only.
+            # Antigravity's summary windows make its pools; every other extra window applies to one model only, but the ones CodexBar uses for something else.
             pool = AGY_POOLS.get(entry_id) if provider == "antigravity" else None
-            name = None if pool else model_name(entry.get("title"), entry_id)
+            other = entry_id is not None and (entry_id in NOT_MODEL_WINDOWS or entry_id.startswith(NOT_MODEL_PREFIXES))
+            name = None if pool or other else model_name(entry.get("title"), entry_id)
             item = window(entry.get("window"), known=entry.get("usageKnown") is not False, now=now) if pool or name else None
             if item:
                 (pools.setdefault(pool, []) if pool else models.setdefault(name, [])).append(item)
@@ -346,10 +357,11 @@ def poll(runner=subprocess.run):
 def source_plans(raw, now, runner=subprocess.run):
     """Plans for the providers in PLAN_SOURCES that CodexBar read without one, from that source, read at most once per PLAN_EVERY and kept in PLANS.
 
-    A read that fails or names no plan keeps the last plan read, else none. Nothing else from that answer is kept or printed: it carries the account's email and identity.
+    A read that fails or names no plan keeps the last plan read, else none; one that names only another account's plan than the configured source read clears it.
+    Nothing else from that answer is kept or printed: it carries the account's email and identity, which are only compared in memory.
     """
-    wanted = [record["provider"] for record in (raw if isinstance(raw, list) else []) if isinstance(record, dict) and isinstance(record.get("provider"), str)
-              and record["provider"] in PLAN_SOURCES and isinstance(record.get("usage"), dict) and not login(record["usage"])]
+    wanted = {record["provider"]: account(record["usage"]) for record in (raw if isinstance(raw, list) else []) if isinstance(record, dict) and isinstance(record.get("provider"), str)
+              and record["provider"] in PLAN_SOURCES and isinstance(record.get("usage"), dict) and not login(record["usage"])}
     if not wanted:
         return {}
     try:
@@ -369,8 +381,10 @@ def source_plans(raw, now, runner=subprocess.run):
             plan = entry["plan"]
             try:
                 answer = run_json(["usage", "--provider", provider, "--json", "--source", PLAN_SOURCES[provider]], runner)
-                found = [login(record["usage"]) for record in answer if isinstance(record, dict) and record.get("provider") == provider and isinstance(record.get("usage"), dict)]
-                plan = next((value for value in found if value), plan)
+                named = [record["usage"] for record in answer if isinstance(record, dict) and record.get("provider") == provider and isinstance(record.get("usage"), dict) and login(record["usage"])]
+                # CodexBar's configured source can read another Google account than the one added to CodexBar; that account's plan is not this one's.
+                mine = [usage for usage in named if not (wanted[provider] and account(usage)) or account(usage) == wanted[provider]]
+                plan = login(mine[0]) if mine else None if named else plan
             except (OSError, ValueError, TypeError, subprocess.SubprocessError):
                 pass
             kept[provider], changed = {"plan": plan, "checkedAt": now.isoformat()}, True
